@@ -205,6 +205,10 @@ tbody tr:hover{background:#F7FAFF}
 .wkbar .btn.pri{background:#8E2B34;border-color:#8E2B34;height:38px;padding:0 18px}
 .wkbar .btn.pri:hover{background:#6F1F27}
 .wkbar .btn.pri[disabled]{background:#C9CFD8;border-color:#C9CFD8;cursor:default}
+.wkapp{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;background:var(--amber-l);border:1px solid #F0D49A;border-radius:12px;padding:14px 16px;font-size:13px;color:#7A4A08}
+.wkapp b{color:#5C3705}
+.wkapp a.go{margin-left:auto;background:#8E2B34;color:#fff;border-radius:8px;height:34px;display:inline-flex;align-items:center;padding:0 14px;font-weight:700;text-decoration:none;white-space:nowrap}
+.wkapp a.go:hover{background:#6F1F27}
 .foot{font-size:12px;color:var(--muted);line-height:1.7}
 .foot b{color:var(--ink2)}
 
@@ -323,6 +327,7 @@ tbody tr:hover{background:#F7FAFF}
   <div class="page-h"><div><h1>이번 주 추천 콘텐츠</h1><p>매주 월요일 아침 레이더가 새 라인업 10개를 올립니다. 촬영하고 싶은 것에 체크하고 아래 <b>선택 저장</b>을 누르면, 그 주제로만 노션 <b>컨텐츠 진행도</b>에 대본이 작성됩니다. 체크하지 않은 주제는 사라지지 않고 다음 주에도 성과가 살아 있으면 다시 올라옵니다.</p></div></div>
   <div class="wkhead"><b id="wkLabel"></b><span id="wkNote"></span><span class="n" id="wkPickN"></span></div>
   <div class="notice" id="wkImgNotice" hidden>지금 이 화면에서는 유튜브 썸네일과 프로필 사진을 불러오지 못해 색상 카드로 표시하고 있습니다. 카드를 누르면 해당 영상이 유튜브에서 바로 열립니다. 공개 주소(GitHub Pages)에서는 사진이 정상으로 보입니다.</div>
+  <div class="wkapp" id="wkApp" hidden></div>
   <div class="notice" id="wkOff" hidden></div>
   <div class="grid2" id="wkGrid"></div>
   <div class="wkbar"><span class="st" id="wkSt"></span><button class="btn pri" id="wkSave">선택 저장</button><button class="btn" id="wkClear">전체 해제</button></div>
@@ -568,29 +573,44 @@ if(WK){
     dirty=true; paintWk();
   });
   document.getElementById('wkClear').addEventListener('click',()=>{picked.clear();dirty=true;paintWk();});
+  async function getDb(){
+    if(dbh) return dbh;
+    try{
+      if(typeof claude==='undefined'||!claude||typeof claude.use!=='function') return null;
+      try{ const pm=await claude.use('permissions'); if(pm&&pm.request) await pm.request(['db']); }catch(e){}
+      dbh=await claude.use('db');
+      return dbh;
+    }catch(e){ return null; }
+  }
+  function showApp(){
+    const el=document.getElementById('wkApp'); if(!el) return;
+    el.hidden=false;
+    el.innerHTML='<div><b>이 화면은 보기 전용입니다.</b> 여기서는 선택을 저장할 수 없어요.<br>클로드 앱에서 같은 대시보드를 열고 체크 후 <b>선택 저장</b>을 누르시면, 고르신 주제로 노션에 대본이 작성됩니다.</div>'
+      + (WK.app?`<a class="go" href="${esc(WK.app)}" target="_blank" rel="noopener">클로드 앱에서 열기 ↗</a>`:'');
+  }
   document.getElementById('wkSave').addEventListener('click',async()=>{
     const btn=document.getElementById('wkSave');
     const list=WK.items.filter(i=>picked.has(i.id));
-    if(!dbh){ document.getElementById('wkOff').hidden=false;
-      document.getElementById('wkOff').textContent='이 화면에서는 저장 기능을 쓸 수 없습니다. 선택한 주제를 채팅으로 알려주시면 바로 대본을 씁니다 — '+list.map(i=>i.t).join(' / ');
-      window.scrollTo({top:0,behavior:'smooth'}); return; }
+    btn.disabled=true; btn.textContent='저장 중…';
+    const db=await getDb();
+    btn.disabled=false; btn.textContent='선택 저장';
+    if(!db){ showApp(); window.scrollTo({top:0,behavior:'smooth'}); return; }
     btn.disabled=true; btn.textContent='저장 중…';
     try{
-      await dbh.doc('selections/'+WK.week).set({week:WK.week,label:WK.label,date:WK.date,
+      await db.doc('selections/'+WK.week).set({week:WK.week,label:WK.label,date:WK.date,
         picked:list.map(i=>({id:i.id,t:i.t,sub:i.sub,why:i.why,cite:i.cite})),
         savedAt:new Date().toISOString(),status:'requested'});
       saved=new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
       dirty=false; btn.textContent='저장 완료 ✓';
       setTimeout(()=>{btn.textContent='선택 저장';paintWk();},1800);
     }catch(err){ btn.textContent='저장 실패'; document.getElementById('wkOff').hidden=false;
-      document.getElementById('wkOff').textContent='저장하지 못했습니다. 선택한 주제를 채팅으로 알려주세요 — '+list.map(i=>i.t).join(' / ');
-      setTimeout(()=>{btn.textContent='선택 저장';paintWk();},1800); }
+      document.getElementById('wkOff').textContent='저장하지 못했습니다 ('+((err&&(err.code||err.message))||'알 수 없는 오류')+'). 잠시 뒤 다시 눌러보시고, 계속 안 되면 채팅으로 알려주세요.';
+      setTimeout(()=>{btn.textContent='선택 저장';paintWk();},2200); }
   });
   paintWk();
   (async()=>{
     try{
-      const db=await claude.use('db'); if(!db) return;
-      dbh=db;
+      const db=await getDb(); if(!db){ showApp(); return; }
       const cur=await db.doc('selections/'+WK.week).get();
       if(cur&&cur.picked&&!dirty){ picked.clear(); cur.picked.forEach(x=>picked.add(x.id));
         saved=cur.savedAt?new Date(cur.savedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
