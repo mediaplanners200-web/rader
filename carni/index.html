@@ -313,14 +313,14 @@ tbody tr:hover{background:#F7FAFF}
 </section>
 
 <section class="view" id="v-week" hidden>
-  <div class="page-h"><div><h1>이번 주 추천 콘텐츠</h1><p>매주 월요일 아침 레이더가 새 라인업을 올립니다. 촬영하고 싶은 것에 체크하고 아래 <b>선택 저장</b>을 누르면, 그 주제로 노션 <b>컨텐츠 진행도</b>에 대본이 작성됩니다.</p></div></div>
+  <div class="page-h"><div><h1>이번 주 추천 콘텐츠</h1><p>매주 월요일 아침 레이더가 새 라인업 10개를 올립니다. 촬영하고 싶은 것에 체크하고 아래 <b>선택 저장</b>을 누르면, 그 주제로만 노션 <b>컨텐츠 진행도</b>에 대본이 작성됩니다. 체크하지 않은 주제는 사라지지 않고 다음 주에도 성과가 살아 있으면 다시 올라옵니다.</p></div></div>
   <div class="wkhead"><b id="wkLabel"></b><span id="wkNote"></span><span class="n" id="wkPickN"></span></div>
   <div class="notice" id="wkOff" hidden></div>
   <div class="grid2" id="wkGrid"></div>
   <div class="wkbar"><span class="st" id="wkSt"></span><button class="btn pri" id="wkSave">선택 저장</button><button class="btn" id="wkClear">전체 해제</button></div>
   <div class="card" style="padding:16px 18px"><div class="foot">
     · 후보는 <b>최근 6개월 이내</b> 영상 중 <b>조회수 ÷ 구독자 0.3배 이상</b> 또는 <b>평소 조회수 대비 3배 이상</b>인 것만 올라옵니다.<br>
-    · 노션 <b>컨텐츠 진행도</b>에 이미 있는 주제는 자동으로 빠집니다.<br>
+    · 노션 <b>컨텐츠 진행도</b>에 이미 <b>대본이 있는</b> 주제만 빠집니다. 지난주에 안 고르신 주제는 그대로 다시 후보에 남습니다.<br>
     · 근거로 적힌 논문·기관 권고는 원문의 강도를 그대로 옮겨 대본에 씁니다. 질병 치료를 약속하는 표현과 특정 제품의 효능 단정은 쓰지 않습니다.
   </div></div>
 </section>
@@ -524,7 +524,7 @@ const WK=R.weekly;
 if(WK){
   document.getElementById('wkLabel').textContent=WK.label+' 라인업';
   document.getElementById('wkNote').textContent=WK.note||'';
-  document.getElementById('wkPickN').textContent='이번 주 '+(WK.pick||2)+'편 선정';
+  document.getElementById('wkPickN').textContent='후보 '+WK.items.length+'개';
   const picked=new Set(WK.items.filter(i=>i.rec).map(i=>i.id));
   let saved=null, dbh=null, dirty=false;
   const evRow=e=>{
@@ -544,10 +544,9 @@ if(WK){
   const grid=document.getElementById('wkGrid');
   function paintWk(){
     grid.innerHTML=WK.items.map(cardHTML).join('');
-    const n=picked.size, need=WK.pick||2;
-    document.getElementById('wkSt').innerHTML= n===0 ? '아직 선택한 주제가 없습니다.'
-      : `<b>${n}개</b> 선택 · ${n===need?'이번 주 편수와 같습니다.':(n<need?`${need-n}개 더 고르면 이번 주 편수입니다.`:`이번 주 편수보다 ${n-need}개 많습니다.`)}`
-        + (saved&&!dirty?` &nbsp;· 저장됨 (${saved})`:'');
+    const n=picked.size;
+    document.getElementById('wkSt').innerHTML= n===0 ? '촬영하고 싶은 주제에 체크한 뒤 <b>선택 저장</b>을 눌러주세요.'
+      : `<b>${n}개</b> 선택` + (saved&&!dirty?` &nbsp;· 저장됨 (${saved})`:'');
     document.getElementById('wkSave').disabled=(n===0);
   }
   grid.addEventListener('change',e=>{
