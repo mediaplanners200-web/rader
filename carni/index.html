@@ -187,12 +187,18 @@ tbody tr:hover{background:#F7FAFF}
 .wk .body{padding:0 18px 16px;display:flex;flex-direction:column;gap:10px}
 .wk .kv{font-size:13px;color:var(--ink2);line-height:1.6}
 .wk .kv b{color:#8E2B34}
-.wk .ev{border-top:1px solid var(--line2);padding-top:10px;display:flex;flex-direction:column;gap:8px}
-.wk .er{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:baseline;font-size:13px}
-.wk .er a,.wk .er .na{font-weight:700;color:var(--ink);text-decoration:none;overflow:hidden;text-overflow:ellipsis;display:block}
-.wk .er a:hover{color:var(--brand-d);text-decoration:underline}
-.wk .er .m{font-size:12px;color:var(--muted);white-space:nowrap}
-.wk .er .m b{color:#8E2B34}
+.wk .ev{border-top:1px solid var(--line2);padding-top:12px;display:flex;flex-direction:column;gap:12px}
+.wk .evh{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:-4px}
+.wk .er{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;font-size:13px}
+.wk .er .thumb{width:124px}
+.wk .et{display:flex;flex-direction:column;gap:4px;min-width:0}
+.wk .et a{font-weight:700;color:var(--ink);text-decoration:none;line-height:1.4}
+.wk .et a:hover{color:var(--brand-d);text-decoration:underline}
+.wk .et .m{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);min-width:0}
+.wk .et .m .av{width:18px;height:18px;font-size:9px}
+.wk .et .m .nm{color:var(--ink2);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wk .et .m2{font-size:12px;color:var(--muted)}
+.wk .et .m2 b{color:#8E2B34}
 .wkbar{position:sticky;bottom:0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;box-shadow:0 -4px 16px rgba(15,23,42,.06)}
 .wkbar .st{font-size:13px;color:var(--ink2)}
 .wkbar .st b{color:#8E2B34}
@@ -210,6 +216,7 @@ tbody tr:hover{background:#F7FAFF}
   .mini{grid-template-columns:repeat(2,minmax(0,1fr))}
   .vi{grid-template-columns:minmax(0,1fr) auto}
   .vi .thumb{display:none}
+  .wk .er .thumb{width:100px}
   .search{flex:1 1 100%}
   .count{margin-left:0}
 }
@@ -315,6 +322,7 @@ tbody tr:hover{background:#F7FAFF}
 <section class="view" id="v-week" hidden>
   <div class="page-h"><div><h1>이번 주 추천 콘텐츠</h1><p>매주 월요일 아침 레이더가 새 라인업 10개를 올립니다. 촬영하고 싶은 것에 체크하고 아래 <b>선택 저장</b>을 누르면, 그 주제로만 노션 <b>컨텐츠 진행도</b>에 대본이 작성됩니다. 체크하지 않은 주제는 사라지지 않고 다음 주에도 성과가 살아 있으면 다시 올라옵니다.</p></div></div>
   <div class="wkhead"><b id="wkLabel"></b><span id="wkNote"></span><span class="n" id="wkPickN"></span></div>
+  <div class="notice" id="wkImgNotice" hidden>지금 이 화면에서는 유튜브 썸네일과 프로필 사진을 불러오지 못해 색상 카드로 표시하고 있습니다. 카드를 누르면 해당 영상이 유튜브에서 바로 열립니다. 공개 주소(GitHub Pages)에서는 사진이 정상으로 보입니다.</div>
   <div class="notice" id="wkOff" hidden></div>
   <div class="grid2" id="wkGrid"></div>
   <div class="wkbar"><span class="st" id="wkSt"></span><button class="btn pri" id="wkSave">선택 저장</button><button class="btn" id="wkClear">전체 해제</button></div>
@@ -371,7 +379,7 @@ const contribGrade=r=>grade(r,[3,1.5,.6,.25]);    // 기여도 = 조회수 ÷ �
 const gr=(g,sub)=>`<span class="gr ${g[1]}"><i>${g[2]}</i>${g[0]}</span>${sub?`<span class="sub num">${sub}</span>`:''}`;
 
 let imgFail=0;
-window.__imgErr=function(el){ el.remove(); imgFail++; if(imgFail===3){ const n=document.getElementById('imgNotice'); if(n) n.hidden=false; } };
+window.__imgErr=function(el){ el.remove(); imgFail++; if(imgFail===3){ ['imgNotice','wkImgNotice'].forEach(k=>{const n=document.getElementById(k); if(n) n.hidden=false;}); } };
 
 CH.forEach(c=>{
   const [y,m]=(c.j||'2020-01').split('-').map(Number); c.years=Math.max((TODAY-new Date(y,m-1,1))/(365.25*864e5),.25);
@@ -528,8 +536,13 @@ if(WK){
   const picked=new Set(WK.items.filter(i=>i.rec).map(i=>i.id));
   let saved=null, dbh=null, dirty=false;
   const evRow=e=>{
-    const nm=e.id?`<a href="${yt(e.id)}" target="_blank" rel="noopener">${esc(e.ti)}</a>`:`<span class="na">${esc(e.ti)}</span>`;
-    return `<div class="er">${nm}<span class="m">${esc(e.v)} · <b>${esc(e.x)}</b></span><span class="m" style="grid-column:1/-1">${esc(e.n)} · ${esc(e.w)}</span></div>`;
+    const c=byH[e.h];
+    const cc=c||{color:'#8E2B34',n:e.n,ini:(e.n||'?').slice(0,1),a:''};
+    return `<div class="er">${thumb({id:e.id,vs:e.v,c:cc})}<div class="et">`
+      + `<a href="${yt(e.id)}" target="_blank" rel="noopener">${esc(e.ti)}</a>`
+      + `<span class="m">${av(cc)}<span class="nm">${esc(e.n)}</span>${c&&c.subs?` · 구독자 ${fmt(c.subs)}`:''}</span>`
+      + `<span class="m2">조회수 ${esc(e.v)} · <b>${esc(e.x)}</b> · ${esc(e.w)}</span>`
+      + `</div></div>`;
   };
   function cardHTML(i){
     return `<div class="card wk${picked.has(i.id)?' on':''}" data-wk="${i.id}">
@@ -538,7 +551,7 @@ if(WK){
       <div class="body">
         <div class="kv"><b>뒤집는 통념</b> · ${esc(i.why)}</div>
         <div class="kv"><b>인용할 근거</b> · ${esc(i.cite)}</div>
-        <div class="ev">${i.ev.map(evRow).join('')}</div>
+        <div class="ev"><span class="evh">근거 영상</span>${i.ev.map(evRow).join('')}</div>
       </div></div>`;
   }
   const grid=document.getElementById('wkGrid');
