@@ -173,6 +173,32 @@ tbody tr:hover{background:#F7FAFF}
 .linkchip .av{width:20px;height:20px;font-size:10px}
 .linkchip span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .linkchip:hover{border-color:var(--brand);color:var(--brand-d)}
+.wkhead{background:linear-gradient(135deg,#8E2B34,#C4565C);color:#fff;border-radius:12px;padding:18px 20px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.wkhead b{font-size:17px;font-weight:800}
+.wkhead span{font-size:13px;opacity:.92}
+.wkhead .n{margin-left:auto;background:rgba(255,255,255,.18);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;white-space:nowrap}
+.wk{padding:0;display:flex;flex-direction:column;overflow:hidden}
+.wk.on{border-color:#8E2B34;box-shadow:0 0 0 3px rgba(142,43,52,.13)}
+.wk .top{display:flex;gap:12px;align-items:flex-start;padding:16px 18px 12px;cursor:pointer}
+.wk .top input{accent-color:#8E2B34;width:20px;height:20px;flex:none;margin-top:2px;cursor:pointer}
+.wk .top h3{margin:0;font-size:16px;font-weight:800;line-height:1.4}
+.wk .top .sb{display:block;font-size:13px;color:var(--ink2);font-weight:400;margin-top:4px}
+.wk .rc{background:var(--amber-l);color:#A56300;border-radius:6px;font-size:11px;font-weight:700;padding:2px 7px;margin-left:6px;white-space:nowrap;display:inline-block;vertical-align:2px}
+.wk .body{padding:0 18px 16px;display:flex;flex-direction:column;gap:10px}
+.wk .kv{font-size:13px;color:var(--ink2);line-height:1.6}
+.wk .kv b{color:#8E2B34}
+.wk .ev{border-top:1px solid var(--line2);padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.wk .er{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:baseline;font-size:13px}
+.wk .er a,.wk .er .na{font-weight:700;color:var(--ink);text-decoration:none;overflow:hidden;text-overflow:ellipsis;display:block}
+.wk .er a:hover{color:var(--brand-d);text-decoration:underline}
+.wk .er .m{font-size:12px;color:var(--muted);white-space:nowrap}
+.wk .er .m b{color:#8E2B34}
+.wkbar{position:sticky;bottom:0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;box-shadow:0 -4px 16px rgba(15,23,42,.06)}
+.wkbar .st{font-size:13px;color:var(--ink2)}
+.wkbar .st b{color:#8E2B34}
+.wkbar .btn.pri{background:#8E2B34;border-color:#8E2B34;height:38px;padding:0 18px}
+.wkbar .btn.pri:hover{background:#6F1F27}
+.wkbar .btn.pri[disabled]{background:#C9CFD8;border-color:#C9CFD8;cursor:default}
 .foot{font-size:12px;color:var(--muted);line-height:1.7}
 .foot b{color:var(--ink2)}
 
@@ -195,6 +221,7 @@ tbody tr:hover{background:#F7FAFF}
     <a class="logo" href="#" data-go="dash" aria-label="카니비비안 레이더 홈"><span class="mark" aria-hidden="true">🥩</span><span><b>카니비비안</b> 레이더</span></a>
     <nav class="tabs" role="tablist" aria-label="메뉴">
       <button class="tab" role="tab" data-view="dash" aria-selected="true">대시보드</button>
+      <button class="tab" role="tab" data-view="week" aria-selected="false">이번 주 추천 ✦</button>
       <button class="tab" role="tab" data-view="channels" aria-selected="false">채널 찾기</button>
       <button class="tab" role="tab" data-view="videos" aria-selected="false">영상 찾기</button>
       <button class="tab" role="tab" data-view="recs" aria-selected="false">벤치마킹 제안</button>
@@ -283,6 +310,19 @@ tbody tr:hover{background:#F7FAFF}
 <span class="gr g-great"><i>●●●●</i>Great</span><span class="gr g-good"><i>●●●</i>Good</span><span class="gr g-normal"><i>●●</i>Normal</span><span class="gr g-bad"><i>●</i>Bad</span><span class="gr g-worst"><i>·</i>Worst</span></div>
     <div class="more"><button class="btn" id="vMore">더 보기</button></div>
   </div>
+</section>
+
+<section class="view" id="v-week" hidden>
+  <div class="page-h"><div><h1>이번 주 추천 콘텐츠</h1><p>매주 월요일 아침 레이더가 새 라인업을 올립니다. 촬영하고 싶은 것에 체크하고 아래 <b>선택 저장</b>을 누르면, 그 주제로 노션 <b>컨텐츠 진행도</b>에 대본이 작성됩니다.</p></div></div>
+  <div class="wkhead"><b id="wkLabel"></b><span id="wkNote"></span><span class="n" id="wkPickN"></span></div>
+  <div class="notice" id="wkOff" hidden></div>
+  <div class="grid2" id="wkGrid"></div>
+  <div class="wkbar"><span class="st" id="wkSt"></span><button class="btn pri" id="wkSave">선택 저장</button><button class="btn" id="wkClear">전체 해제</button></div>
+  <div class="card" style="padding:16px 18px"><div class="foot">
+    · 후보는 <b>최근 6개월 이내</b> 영상 중 <b>조회수 ÷ 구독자 0.3배 이상</b> 또는 <b>평소 조회수 대비 3배 이상</b>인 것만 올라옵니다.<br>
+    · 노션 <b>컨텐츠 진행도</b>에 이미 있는 주제는 자동으로 빠집니다.<br>
+    · 근거로 적힌 논문·기관 권고는 원문의 강도를 그대로 옮겨 대본에 씁니다. 질병 치료를 약속하는 표현과 특정 제품의 효능 단정은 쓰지 않습니다.
+  </div></div>
 </section>
 
 <section class="view" id="v-recs" hidden>
@@ -478,6 +518,74 @@ const RECS=[
 ];
 document.getElementById('recGrid').innerHTML=RECS.map(r=>`<div class="card rec"><h3>${r.t}</h3><div class="who">${r.who.filter(h=>byH[h]).map(h=>`<button class="linkchip" data-open="${esc(h)}">${av(byH[h])}<span class="t">${esc(byH[h].n)}</span></button>`).join('')}</div><p>${esc(r.p)}</p><div class="act">👉 ${r.a}</div></div>`).join('');
 document.getElementById('oursList').innerHTML=OURS.P.map(v=>{ const views=pv(v[1]); const r=views/OURS.subs; const [pl,pc]=perf(r); const vv={id:v[3],vs:v[1],c:{color:'#8E2B34',n:'카니비비안'}}; return `<div class="vi">${thumb(vv)}<div class="vt"><a href="${yt(v[3])}" target="_blank" rel="noopener">${esc(v[0])}</a><span class="o">${esc(v[2])}</span></div><div class="r"><div class="big num">${esc(v[1])}</div><span class="badge ${pc}" style="margin-top:4px">${pl}</span></div></div>`; }).join('');
+
+// ===== 이번 주 추천 =====
+const WK=R.weekly;
+if(WK){
+  document.getElementById('wkLabel').textContent=WK.label+' 라인업';
+  document.getElementById('wkNote').textContent=WK.note||'';
+  document.getElementById('wkPickN').textContent='이번 주 '+(WK.pick||2)+'편 선정';
+  const picked=new Set(WK.items.filter(i=>i.rec).map(i=>i.id));
+  let saved=null, dbh=null, dirty=false;
+  const evRow=e=>{
+    const nm=e.id?`<a href="${yt(e.id)}" target="_blank" rel="noopener">${esc(e.ti)}</a>`:`<span class="na">${esc(e.ti)}</span>`;
+    return `<div class="er">${nm}<span class="m">${esc(e.v)} · <b>${esc(e.x)}</b></span><span class="m" style="grid-column:1/-1">${esc(e.n)} · ${esc(e.w)}</span></div>`;
+  };
+  function cardHTML(i){
+    return `<div class="card wk${picked.has(i.id)?' on':''}" data-wk="${i.id}">
+      <label class="top"><input type="checkbox" ${picked.has(i.id)?'checked':''} data-wkc="${i.id}">
+        <div><h3>${esc(i.t)}${i.rec?'<span class="rc">레이더 추천</span>':''}</h3><span class="sb">${esc(i.sub)}</span></div></label>
+      <div class="body">
+        <div class="kv"><b>뒤집는 통념</b> · ${esc(i.why)}</div>
+        <div class="kv"><b>인용할 근거</b> · ${esc(i.cite)}</div>
+        <div class="ev">${i.ev.map(evRow).join('')}</div>
+      </div></div>`;
+  }
+  const grid=document.getElementById('wkGrid');
+  function paintWk(){
+    grid.innerHTML=WK.items.map(cardHTML).join('');
+    const n=picked.size, need=WK.pick||2;
+    document.getElementById('wkSt').innerHTML= n===0 ? '아직 선택한 주제가 없습니다.'
+      : `<b>${n}개</b> 선택 · ${n===need?'이번 주 편수와 같습니다.':(n<need?`${need-n}개 더 고르면 이번 주 편수입니다.`:`이번 주 편수보다 ${n-need}개 많습니다.`)}`
+        + (saved&&!dirty?` &nbsp;· 저장됨 (${saved})`:'');
+    document.getElementById('wkSave').disabled=(n===0);
+  }
+  grid.addEventListener('change',e=>{
+    const c=e.target.closest('[data-wkc]'); if(!c) return;
+    c.checked?picked.add(c.dataset.wkc):picked.delete(c.dataset.wkc);
+    dirty=true; paintWk();
+  });
+  document.getElementById('wkClear').addEventListener('click',()=>{picked.clear();dirty=true;paintWk();});
+  document.getElementById('wkSave').addEventListener('click',async()=>{
+    const btn=document.getElementById('wkSave');
+    const list=WK.items.filter(i=>picked.has(i.id));
+    if(!dbh){ document.getElementById('wkOff').hidden=false;
+      document.getElementById('wkOff').textContent='이 화면에서는 저장 기능을 쓸 수 없습니다. 선택한 주제를 채팅으로 알려주시면 바로 대본을 씁니다 — '+list.map(i=>i.t).join(' / ');
+      window.scrollTo({top:0,behavior:'smooth'}); return; }
+    btn.disabled=true; btn.textContent='저장 중…';
+    try{
+      await dbh.doc('selections/'+WK.week).set({week:WK.week,label:WK.label,date:WK.date,
+        picked:list.map(i=>({id:i.id,t:i.t,sub:i.sub,why:i.why,cite:i.cite})),
+        savedAt:new Date().toISOString(),status:'requested'});
+      saved=new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+      dirty=false; btn.textContent='저장 완료 ✓';
+      setTimeout(()=>{btn.textContent='선택 저장';paintWk();},1800);
+    }catch(err){ btn.textContent='저장 실패'; document.getElementById('wkOff').hidden=false;
+      document.getElementById('wkOff').textContent='저장하지 못했습니다. 선택한 주제를 채팅으로 알려주세요 — '+list.map(i=>i.t).join(' / ');
+      setTimeout(()=>{btn.textContent='선택 저장';paintWk();},1800); }
+  });
+  paintWk();
+  (async()=>{
+    try{
+      const db=await claude.use('db'); if(!db) return;
+      dbh=db;
+      const cur=await db.doc('selections/'+WK.week).get();
+      if(cur&&cur.picked&&!dirty){ picked.clear(); cur.picked.forEach(x=>picked.add(x.id));
+        saved=cur.savedAt?new Date(cur.savedAt).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+        paintWk(); }
+    }catch(e){}
+  })();
+}
 
 renderCh(); renderV();
 try{ const v=localStorage.getItem('carni-view'); if(v&&document.getElementById('v-'+v)) go(v); }catch(e){}
