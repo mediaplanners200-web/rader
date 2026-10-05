@@ -364,7 +364,7 @@ async function requestPlan(){
     await DB.doc('plans/' + pid).set({id: pid, ids, ext: ids.filter(id => (SAVED.get(id)||{}).ext).map(id => ({id, url: SAVED.get(id).url})), cast, shoot, note, by: UID || '', at: Date.now(), status: 'queued', step: '대기 중', title: first.t || '', refTitles: ids.map(id => (V[id] || SAVED.get(id) || {}).t || '')});
     SEL.clear(); $('planNote').value = ''; $('planDate').value = ''; renderSaved();
     const fired = await fireTrigger(R.trig?.plan, '기획 요청 ' + pid);
-    toast('기획 요청을 접수했습니다. 보통 10~20분 안에 작성이 시작되고, 노션 컨텐츠 진행도에 바로 올라갑니다. 끝나면 여기서 알려 드립니다.', 6000);
+    toast('기획 요청을 접수했습니다. 매일 9·12·15·18·21시에 확인해서 작성을 시작하고, 노션 컨텐츠 진행도에 올라갑니다. 끝나면 여기서 알려 드립니다.', 6000);
     go('plans');
   } catch(e) { toast('기획 요청을 저장하지 못했습니다. 팀 비밀번호와 인터넷 연결을 확인해 주세요.'); }
   $('btnPlan').disabled = false;
@@ -433,7 +433,7 @@ function planCard(p){
       <div><p class="sec-t">같은 주제 · 성과 좋은 썸네일</p>${thumbsRow(res.sameThumbs, 8)}</div>
       <div><p class="sec-t">다른 업종 · 요즘 성과 좋은 썸네일</p>${thumbsRow(res.otherThumbs, 8)}</div>
       ${res.staging ? `<div class="box"><h4>추천 연출 · ${esc(res.staging.form||'')}</h4><ul>${(res.staging.how||[]).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
-      ` : `<div class="foot">${p.status === 'queued' ? '기획 순서를 기다리는 중입니다. 보통 10~20분 안에 시작됩니다.' : '지금 작성 중입니다. 이 화면은 자동으로 갱신됩니다.'}</div>`}
+      ` : `<div class="foot">${p.status === 'queued' ? '기획 순서를 기다리는 중입니다. 매일 9·12·15·18·21시에 확인해서 시작합니다.' : '지금 작성 중입니다. 이 화면은 자동으로 갱신됩니다.'}</div>`}
     </div></div>`;
 }
 function renderPlans(){
@@ -442,7 +442,7 @@ function renderPlans(){
   $('cntPlans').hidden = !unseen; $('cntPlans').textContent = unseen;
   const queued = list.filter(p => p.status === 'queued').length; const pn = $('plansNote');
   if (queued && IS_OWNER && MCP && R.trig?.plan) { pn.hidden = false; pn.className = 'notice'; pn.innerHTML = `대기 중인 기획 요청 <b>${queued}건</b>이 있습니다. <button class="btn sm pri" id="btnRunPlans" type="button">지금 기획 시작</button>`; }
-  else if (queued && !IS_OWNER) { pn.hidden = false; pn.className = 'notice'; pn.textContent = `대기 중인 기획 요청 ${queued}건 — 보통 10~20분 안에 자동으로 시작됩니다.`; }
+  else if (queued && !IS_OWNER) { pn.hidden = false; pn.className = 'notice'; pn.textContent = `대기 중인 기획 요청 ${queued}건 — 매일 9·12·15·18·21시에 확인해서 자동으로 시작합니다.`; }
   else pn.hidden = true;
   if (!list.length) return;
   $('planList').innerHTML = list.map(planCard).join('');
@@ -464,7 +464,7 @@ $('btnRefresh').addEventListener('click', async () => {
   try {
     await DB.doc('jobs/refresh').set({status: 'queued', by: UID || '', reqAt: Date.now(), from: R.updated});
     const fired = await fireTrigger(R.trig?.refresh, '레이더 최신화 요청');
-    toast('최신화 요청을 접수했습니다. 보통 10~20분 안에 시작되고, 끝나면 화면이 자동으로 새 데이터로 바뀝니다.', 6000);
+    toast('최신화 요청을 접수했습니다. 매일 9·12·15·18·21시에 확인해서 시작하고, 끝나면 화면이 자동으로 새 데이터로 바뀝니다.', 6000);
   } catch(e) { toast('최신화를 요청하지 못했습니다. 팀 비밀번호와 인터넷 연결을 확인해 주세요.'); }
 });
 
