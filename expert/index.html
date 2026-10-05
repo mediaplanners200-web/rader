@@ -184,6 +184,7 @@ tbody tr:hover{background:var(--hover)}
 /* thumbs & video rows */
 .thumb{width:136px;aspect-ratio:16/9;border-radius:6px;display:grid;place-items:center;position:relative;flex:none;overflow:hidden;text-decoration:none;max-width:100%;background:var(--chip)}
 .thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;max-width:none}
+.thumb img:not([src]),.av img:not([src]){display:none}
 .thumb .ini{position:absolute;left:6px;top:4px;right:6px;color:rgba(255,255,255,.95);font-size:10px;font-weight:700;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .thumb .tag{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.78);color:#fff;font-size:10px;padding:1px 5px;border-radius:3px;font-weight:700}
 .thumb .sh{position:absolute;left:4px;bottom:4px;background:#E62117;color:#fff;font-size:9.5px;padding:1px 5px;border-radius:3px;font-weight:800}
@@ -284,12 +285,29 @@ tbody tr:hover{background:var(--hover)}
 
 /* drawer */
 .scrim{position:fixed;inset:0;background:var(--scrim);z-index:40}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(780px,100%);background:var(--card);z-index:41;display:flex;flex-direction:column;box-shadow:-12px 0 32px var(--shadow)}
-.dr-h{padding:calc(16px + env(safe-area-inset-top,0px)) 20px 16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
+.drawer{position:fixed;top:calc(2.5vh + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(1280px,calc(100% - 32px));height:calc(95vh - env(safe-area-inset-top,0px));background:var(--card);z-index:41;display:flex;flex-direction:column;box-shadow:0 20px 60px var(--shadow);border-radius:16px;overflow:hidden}
+.dr-h .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.dr-top{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+.dr-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.dr-stats div{background:var(--page);border-radius:10px;padding:12px 14px}
+.dr-stats .l{font-size:11.5px;color:var(--ink2)}
+.dr-stats .v{font-size:19px;font-weight:800;margin-top:2px}
+.dr-stats .s{font-size:11px;color:var(--muted);margin-top:2px}
+.dr-best{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.dr-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.dr-tbl{overflow-x:auto}
+.dr-tbl table{width:100%;border-collapse:collapse;font-size:13px}
+.dr-tbl th{font-size:12px;color:var(--ink2);font-weight:700;text-align:center;padding:8px 6px;border-bottom:1px solid var(--line);white-space:nowrap}
+.dr-tbl th.sortable{cursor:pointer}
+.dr-tbl th.on{color:var(--brand-d)}
+.dr-tbl td{padding:10px 6px;border-bottom:1px solid var(--line2);text-align:center;vertical-align:middle}
+.dr-tbl td.l{text-align:left}
+.dr-tbl .thumb{width:150px}
+.dr-h{padding:18px 24px 16px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:flex-start}
 .dr-h .av{width:52px;height:52px;font-size:18px}
 .dr-h h3{margin:0;font-size:18px;font-weight:800}
 .dr-h .x{margin-left:auto;border:0;background:var(--chip);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:18px;flex:none}
-.dr-b{overflow-y:auto;padding:16px 20px calc(30px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+.dr-b{overflow-y:auto;padding:18px 24px calc(30px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
 .mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .mini div{background:var(--page);border-radius:8px;padding:10px 12px}
 .mini .l{font-size:11px;color:var(--ink2)}
@@ -316,10 +334,16 @@ tbody tr:hover{background:var(--hover)}
   .crow{grid-template-columns:24px minmax(0,1fr) auto} .crow .thumb{display:none}
   .topic .strip{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
-@media (prefers-reduced-motion:no-preference){ .drawer{animation:slide .18s ease-out} @keyframes slide{from{transform:translateX(30px);opacity:.6}to{transform:none;opacity:1}} }
+@media (max-width:900px){ .dr-top{grid-template-columns:1fr} .dr-stats{grid-template-columns:repeat(2,minmax(0,1fr))} .dr-best{grid-template-columns:1fr} .drawer{top:0;height:100%;width:100%;border-radius:0} }
+@media (prefers-reduced-motion:no-preference){ .drawer{animation:pop .16s ease-out} @keyframes pop{from{opacity:.4;margin-top:14px}to{opacity:1;margin-top:0}} }
+.extadd{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line2)}
+.extadd input{flex:1 1 320px;min-width:0;height:38px;border:1px solid var(--line);border-radius:8px;padding:0 12px;font:inherit;background:var(--card);color:var(--ink)}
+.planopts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.planopts select,.planopts input{height:38px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit;background:var(--card);color:var(--ink)}
+.banner-ext{background:var(--brand-l);color:var(--brand-d);font-size:13.5px;padding:10px 16px;text-align:center}
+.banner-ext a{font-weight:800;color:inherit}
 </style>
 </head><body>
-
 
 <header class="nav">
   <div class="nav-in">
@@ -375,14 +399,14 @@ tbody tr:hover{background:var(--hover)}
   <div class="page-h"><div><h1>채널 찾기</h1><p>열 제목을 누르면 정렬되고, 채널을 누르면 인기 영상·최신 영상·쇼츠가 열립니다. 새로 발굴한 채널은 <span class="badge b-new">신규</span>로 표시합니다.</p></div></div>
   <div class="card">
     <div class="toolbar">
-      <label class="search" for="chQ"><span aria-hidden="true">🔍</span><input id="chQ" type="search" placeholder="채널명, 역할, 국가 검색"></label>
-      <span class="seg" id="chCat"><button data-v="all" aria-pressed="true">전체</button><button data-v="kr" aria-pressed="false">국내 세무회계</button><button data-v="krp" aria-pressed="false">국내 전문직</button><button data-v="ost" aria-pressed="false">해외 세무회계</button><button data-v="osp" aria-pressed="false">해외 전문직</button><button data-v="osf" aria-pressed="false">해외 재테크</button></span>
+      <label class="search" for="chQ"><span aria-hidden="true">🔍</span><input id="chQ" type="search" placeholder="채널명, 역할, 세부 분야 검색"></label>
+      <span class="seg" id="chCat"><button data-v="all" aria-pressed="true">전체</button><button data-v="kr" aria-pressed="false">국내 세무회계</button><button data-v="krp" aria-pressed="false">국내 전문직</button><button data-v="ost" aria-pressed="false">해외 세무회계</button><button data-v="osp" aria-pressed="false">해외 전문직</button></span>
       <label class="chk" for="chStar"><input type="checkbox" id="chStar">우선 벤치마킹만</label>
       <label class="chk" for="chNew"><input type="checkbox" id="chNew">개설 5년 이내만</label>
       <span class="count" id="chCount"></span>
     </div>
     <div class="tw"><table>
-      <thead><tr><th class="l">채널</th><th>분야</th><th>국가</th><th class="sortable" data-k="subs">구독자</th><th class="sortable" data-k="growth">연평균 증가</th><th class="sortable" data-k="recent">최근 성과도</th><th class="sortable" data-k="views">총조회수</th><th class="sortable" data-k="jd">개설일</th><th>표시</th><th></th></tr></thead>
+      <thead><tr><th class="l">채널</th><th>분야</th><th>세부 분야</th><th class="sortable" data-k="subs">구독자</th><th class="sortable" data-k="growth">연평균 증가</th><th class="sortable" data-k="recent">최근 성과도</th><th class="sortable" data-k="views">총조회수</th><th class="sortable" data-k="jd">개설일</th><th>표시</th><th></th></tr></thead>
       <tbody id="chBody"></tbody>
     </table></div>
   </div>
@@ -440,11 +464,12 @@ tbody tr:hover{background:var(--hover)}
 <section class="view" id="v-saved" hidden>
   <div class="page-h"><div><h1>수집한 영상</h1><p>영상 찾기·벤치마킹 제안에서 <b>＋ 수집</b>한 영상이 모입니다. 함께 다룰 영상을 체크하고 <b>기획하기</b>를 누르면, 노션 컨텐츠 진행도에 기존 기획안과 같은 형식의 기획안이 자동으로 작성됩니다. PD님과 같은 목록을 함께 봅니다.</p></div></div>
   <div id="savedNote" class="notice" hidden></div>
-  <div class="card" id="savedCard"><div class="empty" id="savedEmpty"><b>아직 수집한 영상이 없습니다</b><span>영상 찾기나 벤치마킹 제안에서 ＋ 수집 버튼을 눌러 보세요.</span></div><div id="savedList"></div></div>
+  <div class="card" id="savedCard"><form class="extadd" id="extForm"><label for="extUrl" style="font-weight:800;font-size:13.5px">다른 유튜브 영상 추가</label><input id="extUrl" type="url" inputmode="url" placeholder="레이더에 없는 영상도 링크를 붙여 넣으면 레퍼런스로 수집됩니다 (youtube.com/watch?v=… · youtu.be/… · shorts)"><button class="btn pri" type="submit">수집</button></form><div class="empty" id="savedEmpty"><b>아직 수집한 영상이 없습니다</b><span>영상 찾기나 벤치마킹 제안에서 ＋ 수집 버튼을 눌러 보세요.</span></div><div id="savedList"></div></div>
   <div class="actionbar" id="planBar" hidden>
     <b id="planSel">0개 선택</b>
     <label for="planNote" style="position:absolute;left:-9999px">기획 요청 메모</label>
-    <textarea id="planNote" placeholder="요청 메모 (선택) 예: 정재훈 세무사님 10/12 촬영용, 종이 설명 연출로"></textarea>
+    <span class="planopts"><label for="planCast" style="position:absolute;left:-9999px">출연 세무사</label><select id="planCast"><option value="">출연 세무사 선택</option></select><input id="planCastEtc" placeholder="직접 입력" hidden style="width:110px"><label for="planDate" style="font-size:12px;color:var(--ink2)">촬영일</label><input id="planDate" type="date"></span>
+    <textarea id="planNote" placeholder="요청 메모 (선택) 예: 종이 설명 연출로, 20대 사회초년생 대상"></textarea>
     <button class="btn pri" id="btnPlan" type="button">기획하기</button>
   </div>
 </section>
@@ -461,7 +486,7 @@ tbody tr:hover{background:var(--hover)}
 <aside class="drawer" id="drawer" hidden aria-label="채널 상세"></aside>
 <div class="toast" id="toast" hidden></div>
 
-<script>(function(){var t=Math.floor(Date.now()/600000);document.write('<script src="data.js?t='+t+'"><\/script><script src="app.js?t='+t+'"><\/script>')})()</script>
 
+<script>(function(){var t=Math.floor(Date.now()/600000);document.write('<script src="data.js?t='+t+'"><\/script><script src="app.js?t='+t+'"><\/script>')})()</script>
 
 </body></html>
