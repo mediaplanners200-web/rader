@@ -548,8 +548,9 @@ try { const v = localStorage.getItem('xr-view'); const h = (location.hash||'').r
 
 // ---------- 저장 서버(구글 시트) ----------
 const API = 'https://script.google.com/macros/s/AKfycbw9jnfyI3sPX-p8axDUj_S7_6RKQmgRIWtH3NFR5z-7odQ_j86DVWyDVJr0vIVBAw8Zxw/exec';
-let KEY = '';
-try { const q = new URLSearchParams(location.search).get('k'); if (q) { localStorage.setItem('xr-key', q); history.replaceState(null, '', location.pathname + location.hash); } KEY = localStorage.getItem('xr-key') || ''; } catch(e) {}
+// 팀 비밀번호 없이 링크만 있으면 사용(저장 서버 접속 값은 코드에 고정). 예전 ?k= 링크는 주소에서만 지움
+let KEY = 'expert-team-2026';
+try { if (new URLSearchParams(location.search).get('k')) history.replaceState(null, '', location.pathname + location.hash); } catch(e) {}
 let api = async function(body){
   const r = await fetch(API, {method: 'POST', body: JSON.stringify(Object.assign({k: KEY}, body))});
   const j = await r.json(); if (!j.ok) throw new Error(j.error || 'fail'); return j;
