@@ -2,6 +2,7 @@
 'use strict';
 const R = window.RADAR; if (!R) { document.querySelector('main').innerHTML = '<div class="notice warn">데이터 파일을 불러오지 못했습니다. 새로고침해 보세요.</div>'; return; }
 const $ = id => document.getElementById(id);
+if (!/github\.io$|^localhost$|^127\./.test(location.hostname) && /^https?:/.test(location.protocol)) { const b = document.createElement('div'); b.className = 'banner-ext'; b.innerHTML = '이 화면은 보관용입니다. 수집·기획하기는 <a href="https://mediaplanners200-web.github.io/rader/expert/" target="_blank" rel="noopener">팀 레이더 사이트</a>에서 해 주세요.'; document.body.prepend(b); }
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = n => { n = +n || 0; if (n >= 1e8) { const v = n/1e8; return (v>=10?Math.round(v):v.toFixed(1).replace(/\.0$/,''))+'억'; } if (n >= 1e4) { const v = n/1e4; return (v>=100?Math.round(v):v.toFixed(1).replace(/\.0$/,''))+'만'; } return Math.round(n).toLocaleString('ko-KR'); };
 const median = a => { if (!a.length) return 0; const s = [...a].sort((x,y)=>x-y), m = Math.floor(s.length/2); return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
@@ -11,7 +12,10 @@ const ytS = id => 'https://www.youtube.com/shorts/' + encodeURIComponent(id);
 const [uy,um,ud] = R.updated.split('-').map(Number); const TODAY = new Date(uy, um-1, ud);
 const daysSince = pd => { if (!pd) return null; const [y,m,d] = pd.split('-').map(Number); return Math.max(0, Math.round((TODAY - new Date(y,m-1,d)) / 864e5)); };
 const PAL = ['#1D6BF3','#12A36B','#7C5CFA','#E08700','#E5484D','#0EA5E9','#DB2777','#0F9488','#8B5CF6','#EA580C','#16A34A','#4F46E5'];
-const CAT = {kr:['국내 세무회계','kr'], krp:['국내 전문직','krdoc'], ost:['해외 세무회계',''], osp:['해외 전문직','doc'], osf:['해외 재테크','']};
+const CAT = {kr:['국내 세무회계','kr'], krp:['국내 전문직','krdoc'], ost:['해외 세무회계',''], osp:['해외 전문직','doc']};
+// 깃허브 사이트에서는 유튜브 원본 고화질 이미지를 바로 씀(아티팩트는 외부 이미지가 막혀 내장 썸네일 사용)
+const EXT = /github\.io$|^localhost$|^127\./.test(location.hostname);
+const yimg = (id, q) => 'https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/' + q + '.jpg';
 const GRADES = [['Great','g-great','●●●●'],['Good','g-good','●●●'],['Normal','g-normal','●●'],['Bad','g-bad','●'],['Worst','g-worst','·']];
 const grade = (v,t) => { for (let i=0;i<t.length;i++) if (v>=t[i]) return GRADES[i]; return GRADES[4]; };
 const perfGrade = r => grade(r, [1, .3, .1, .03]);
@@ -72,9 +76,15 @@ function paintThumbs(){
 }
 const AVLOAD = () => { if (!window.RADAR_AV && !loadedB['av']) { loadedB['av'] = 1; const s = document.createElement('script'); s.src = 'avatars.js?v=' + (R.updated||''); s.onload = paintThumbs; document.head.appendChild(s); } };
 
-const av = c => `<span class="av" style="background:${c.color}">${esc(c.ini)}<img data-aid="${esc(c.h)}" alt=""></span>`;
+document.addEventListener('error', e => { const im = e.target; if (!im || im.tagName !== 'IMG') return;
+  if (im.dataset.fb2) { const n = im.dataset.fb2; im.dataset.fb2 = ''; im.src = n; return; }
+  if (im.dataset.fb) { const id = im.dataset.fb; im.removeAttribute('data-fb'); im.removeAttribute('src'); im.dataset.tid = id; paintThumbs(); return; }
+  if (im.dataset.cap2) { const n = im.dataset.cap2; im.dataset.cap2 = ''; im.src = n; return; }
+  if (im.closest('figure')) im.closest('figure').remove();
+}, true);
+const av = c => `<span class="av" style="background:${c.color}">${esc(c.ini)}${EXT && c.a ? `<img src="https://yt3.googleusercontent.com/${esc(c.a)}=s88-c-k-c0x00ffffff-no-rj" alt="" loading="lazy">` : `<img data-aid="${esc(c.h)}" alt="">`}</span>`;
 const thumb = (v, opts) => { opts = opts || {}; const color = v.ch ? v.ch.color : PAL[hash(v.h||v.cn||v.id) % PAL.length];
-  return `<a class="thumb" href="${v.short ? ytS(v.id) : yt(v.id)}" target="_blank" rel="noopener" style="background:linear-gradient(135deg,${color},${color}B3)" aria-label="유튜브에서 열기"><span class="ini">${esc(v.cn || (v.ch && v.ch.n) || '')}</span><img data-tid="${esc(v.id)}" alt="" loading="lazy">${v.short ? '<span class="sh">SHORTS</span>' : ''}<span class="tag">${fmt(v.vc)}</span></a>`; };
+  return `<a class="thumb" href="${v.short ? ytS(v.id) : yt(v.id)}" target="_blank" rel="noopener" style="background:linear-gradient(135deg,${color},${color}B3)" aria-label="유튜브에서 열기"><span class="ini">${esc(v.cn || (v.ch && v.ch.n) || '')}</span>${EXT ? `<img src="${yimg(v.id, opts.big ? 'maxresdefault' : 'mqdefault')}" data-fb="${esc(v.id)}" data-fb2="${opts.big ? yimg(v.id, 'hqdefault') : ''}" alt="" loading="lazy">` : `<img data-tid="${esc(v.id)}" alt="" loading="lazy">`}${v.short ? '<span class="sh">SHORTS</span>' : ''}<span class="tag">${fmt(v.vc)}</span></a>`; };
 const chName = v => v.ch ? v.ch.n : (v.cn || '');
 const ageTxt = v => v.d == null ? '' : v.d === 0 ? '오늘' : v.d < 7 ? v.d + '일 전' : v.d < 31 ? Math.floor(v.d/7) + '주 전' : v.d < 365 ? Math.floor(v.d/30) + '개월 전' : Math.floor(v.d/365) + '년 전';
 const kwChips = (v, n) => (v.kw||[]).slice(0, n||3).map(k => { const K = KW[k]; return K ? `<button class="kwchip g${K.grade}" data-kw="${esc(k)}" title="검색량 탭에서 보기">#${esc(k)} <b>${KWG[K.grade]}</b></button>` : `<span class="kwchip">#${esc(k)}</span>`; }).join(' ');
@@ -181,7 +191,7 @@ function renderTopics(){
 }
 segBind('topicSeg', v => { topicMode = v; renderTopics(); });
 
-function bigCard(v){ return `<div class="vcard">${thumb(v)}<a class="tt" href="${v.short ? ytS(v.id) : yt(v.id)}" target="_blank" rel="noopener" title="${esc(v.o||v.t)}">${esc(v.t)}</a><span class="mt">${esc(chName(v) || v.cn || '')} · 조회수 ${fmt(v.vc)}${v.d != null ? ' · ' + esc(ageTxt(v)) : ''}</span><div class="row"><span class="vbadges">${v.pb ? '<span class="badge b-star">우선 벤치마킹</span>' : ''}${v.bs ? '<span class="badge b-bs">베스트셀러</span>' : ''}</span>${collectBtn(v.id)}</div></div>`; }
+function bigCard(v){ return `<div class="vcard">${thumb(v, {big:1})}<a class="tt" href="${v.short ? ytS(v.id) : yt(v.id)}" target="_blank" rel="noopener" title="${esc(v.o||v.t)}">${esc(v.t)}</a><span class="mt">${esc(chName(v) || v.cn || '')} · 조회수 ${fmt(v.vc)}${v.d != null ? ' · ' + esc(ageTxt(v)) : ''}</span><div class="row"><span class="vbadges">${v.pb ? '<span class="badge b-star">우선 벤치마킹</span>' : ''}${v.bs ? '<span class="badge b-bs">베스트셀러</span>' : ''}</span>${collectBtn(v.id)}</div></div>`; }
 function renderFormats(){
   $('fmtHint').textContent = R.fmtHint || '';
   $('fmtGrid').innerHTML = (R.formats||[]).map((f, i) => `<div class="fmt" style="${i ? 'border-top:1px solid var(--line);padding-top:22px' : ''};padding-left:0;padding-right:0">
@@ -269,10 +279,20 @@ $('vMore').addEventListener('click', () => { vs.lim += 50; renderV(); });
 document.querySelectorAll('#v-videos th.sortable').forEach(th => th.addEventListener('click', () => { if (vs.k === th.dataset.k) vs.dir *= -1; else { vs.k = th.dataset.k; vs.dir = -1; } renderV(); }));
 
 // ---------- recommendations ----------
+const mmss = t => Math.floor(t/60) + ':' + String(Math.round(t%60)).padStart(2,'0');
+function capsHtml(r, ids){
+  const caps = r.caps || {}; const fig = (id, src, src2, t, k) => `<figure><a href="${yt(id)}&t=${Math.round(t||0)}s" target="_blank" rel="noopener"><img src="${src}" ${src2 ? `data-cap2="${src2}"` : ''} alt="${esc(V[id].t)} 장면 ${k}" loading="lazy"></a><figcaption>${esc(chName(V[id]) || V[id].cn || '')} · ${t ? (src2 ? '약 ' : '') + mmss(t) : '장면 ' + k}</figcaption></figure>`;
+  let out = [];
+  if (EXT) { // 유튜브가 만들어 둔 고화질 장면(25%·50%·75% 지점) — 롱폼 레퍼런스 최대 4편
+    ids.filter(id => !V[id].short).slice(0, 4).forEach(id => { const len = +V[id].len || 0; [1,2,3].forEach(n => out.push(fig(id, yimg(id, 'maxres' + n), yimg(id, 'hq' + n), len > 0 ? len * n / 4 : 0, n))); });
+  }
+  if (!out.length) ids.filter(id => caps[id] && caps[id].length).forEach(id => caps[id].slice(0, 3).forEach((c, k) => out.push(fig(id, c.src, '', c.t, k+1))));
+  return out.length ? `<div class="caps">${out.join('')}</div>` : '<p class="sub" style="margin:0">영상 장면 캡처는 다음 최신화 때 레퍼런스 영상에서 자동으로 채워집니다.</p>';
+}
+
 function renderRecs(){
   $('recList').innerHTML = (R.recs||[]).map((r, i) => { const ids = (r.ids||[]).filter(id => V[id]);
-    const caps = r.caps || {}; const capIds = ids.filter(id => caps[id] && caps[id].length);
-    return `<div class="card rec">
+        return `<div class="card rec">
       <div class="rec-h"><div><div class="rank">추천 ${i+1}순위 · <span class="badge ${r.npb && r.nbs ? 'b-hot' : r.npb ? 'b-star' : 'b-bs'}">${esc(r.kind||'')}</span> <span class="sub" style="display:inline">점수 ${r.score} · 우선 벤치마킹 ${r.npb}편 · 베스트셀러 ${r.nbs}편</span></div><h3>${esc(r.t)}</h3></div><div style="display:flex;gap:6px;flex-wrap:wrap">${(r.kw||[]).map(k => { const K = KW[k]; return K ? `<button class="kwchip g${K.grade}" data-kw="${esc(k)}">#${esc(k)} <b>${KWG[K.grade]}</b></button>` : ''; }).join('')}</div></div>
       <p style="margin:0;color:var(--ink2);font-size:14px;line-height:1.65">${esc(r.why)}</p>
       <div class="sec"><h4>레퍼런스 영상 <span class="sub" style="display:inline;font-weight:400">조회수 + 최신성 점수 순</span></h4><div class="bigv">${ids.map(id => bigCard(V[id])).join('')}</div></div>
@@ -280,7 +300,7 @@ function renderRecs(){
         <div class="box"><h4>본론에서 공통으로 다루는 내용</h4><ul>${(r.body||[]).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
         <div class="box"><h4>서론 후킹 방식</h4><ul>${(r.hooks||[]).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
       </div>
-      <div class="sec"><h4>연출 캡처 <span class="sub" style="display:inline;font-weight:400">레퍼런스 영상의 구도·형식</span></h4>${capIds.length ? `<div class="caps">${capIds.flatMap(id => caps[id].slice(0, 3).map((c, k) => `<figure><a href="${yt(id)}&t=${c.t||0}s" target="_blank" rel="noopener"><img src="${c.src}" alt="${esc(V[id].t)} 장면 ${k+1}" loading="lazy"></a><figcaption>${esc(chName(V[id]) || V[id].cn || '')} · ${Math.floor((c.t||0)/60)}:${String((c.t||0)%60).padStart(2,'0')}</figcaption></figure>`)).join('')}</div>` : '<p class="sub" style="margin:0">영상 장면 캡처는 다음 최신화 때 레퍼런스 영상에서 자동으로 채워집니다.</p>'}</div>
+      <div class="sec"><h4>연출 캡처 <span class="sub" style="display:inline;font-weight:400">레퍼런스 영상의 화면 구성 · 누르면 그 장면부터 재생</span></h4>${capsHtml(r, ids)}</div>
       <div class="tops">
         <div class="box"><h4>추천 제목 TOP 5</h4><ol class="tlist">${(r.titles||[]).slice(0,5).map(x => `<li><b>${esc(x)}</b></li>`).join('')}</ol></div>
         <div class="box"><h4>썸네일 문구 TOP 5 <span class="sub" style="display:inline;font-weight:400">메인 + 서브</span></h4><div class="tmocks">${(r.thumbs||[]).slice(0,5).map((x, k) => `<div class="tmock"><span class="n">${k+1}</span><span class="s">${esc(x.s)}</span><span class="m">${esc(x.m)}</span></div>`).join('')}</div></div>
@@ -324,7 +344,7 @@ function renderSaved(){
   const inPlan = new Set(); PLANS.forEach(p => (p.ids||[]).forEach(id => inPlan.add(id)));
   $('savedList').innerHTML = list.map(s => { const v = V[s.id] || {id:s.id, t:s.t, o:s.o, vc:s.vc, cn:s.cn, short:s.short, kw:[]};
     return `<div class="crow"><input type="checkbox" id="sel-${esc(s.id)}" data-sel="${esc(s.id)}" ${SEL.has(s.id) ? 'checked' : ''} aria-label="기획에 포함"> ${thumb(v)}
-      <div class="vt"><a href="${v.short ? ytS(v.id) : yt(v.id)}" target="_blank" rel="noopener">${esc(v.t || s.t)}</a>${v.o ? `<span class="o">${esc(v.o)}</span>` : ''}<span class="o">${esc(chName(v) || s.cn || '')} · 조회수 ${fmt(v.vc || s.vc)}${v.d != null ? ' · ' + esc(ageTxt(v)) : ''}${inPlan.has(s.id) ? ' · <b style="color:var(--violet-ink)">기획에 사용됨</b>' : ''}</span><span style="display:flex;gap:4px;flex-wrap:wrap">${kwChips(v)}</span></div>
+      <div class="vt"><a href="${v.short ? ytS(v.id) : yt(v.id)}" target="_blank" rel="noopener">${esc(v.t || s.t)}</a>${v.o ? `<span class="o">${esc(v.o)}</span>` : ''}<span class="o">${s.ext ? '<b style="color:var(--brand-d)">링크로 추가</b> · ' : ''}${esc(chName(v) || s.cn || '')}${(v.vc || s.vc) ? ' · 조회수 ' + fmt(v.vc || s.vc) : ''}${v.d != null ? ' · ' + esc(ageTxt(v)) : ''}${inPlan.has(s.id) ? ' · <b style="color:var(--violet-ink)">기획에 사용됨</b>' : ''}</span><span style="display:flex;gap:4px;flex-wrap:wrap">${kwChips(v)}</span></div>
       <button class="btn sm" data-collect="${esc(s.id)}" type="button">삭제</button></div>`; }).join('');
   $('savedList').querySelectorAll('[data-collect]').forEach(b => b.textContent = '삭제');
   $('planBar').hidden = !SEL.size; $('planSel').textContent = SEL.size + '개 선택';
@@ -335,19 +355,44 @@ $('savedList').addEventListener('change', e => { const c = e.target.closest('[da
 async function requestPlan(){
   if (!SEL.size) return; if (!KEY) { askKey(); return; }
   const ids = [...SEL]; const note = $('planNote').value.trim();
+  const cast = $('planCast').value === '__etc' ? $('planCastEtc').value.trim() : $('planCast').value; const shoot = $('planDate').value || '';
+  if (!cast) { toast('이번 영상에 출연하는 세무사님을 선택해 주세요.'); $('planCast').focus(); return; }
   const pid = 'p' + Date.now().toString(36);
   const first = V[ids[0]] || SAVED.get(ids[0]) || {};
   $('btnPlan').disabled = true;
   try {
-    await DB.doc('plans/' + pid).set({id: pid, ids, note, by: UID || '', at: Date.now(), status: 'queued', step: '대기 중', title: first.t || '', refTitles: ids.map(id => (V[id] || SAVED.get(id) || {}).t || '')});
-    SEL.clear(); $('planNote').value = ''; renderSaved();
+    await DB.doc('plans/' + pid).set({id: pid, ids, ext: ids.filter(id => (SAVED.get(id)||{}).ext).map(id => ({id, url: SAVED.get(id).url})), cast, shoot, note, by: UID || '', at: Date.now(), status: 'queued', step: '대기 중', title: first.t || '', refTitles: ids.map(id => (V[id] || SAVED.get(id) || {}).t || '')});
+    SEL.clear(); $('planNote').value = ''; $('planDate').value = ''; renderSaved();
     const fired = await fireTrigger(R.trig?.plan, '기획 요청 ' + pid);
-    toast('기획 요청을 접수했습니다. 1시간 안에(오전 9시~오후 8시) 시작되고, 끝나면 여기서 알려 드립니다.', 5000);
+    toast('기획 요청을 접수했습니다. 보통 10~20분 안에 작성이 시작되고, 노션 컨텐츠 진행도에 바로 올라갑니다. 끝나면 여기서 알려 드립니다.', 6000);
     go('plans');
   } catch(e) { toast('기획 요청을 저장하지 못했습니다. 팀 비밀번호와 인터넷 연결을 확인해 주세요.'); }
   $('btnPlan').disabled = false;
 }
 $('btnPlan').addEventListener('click', requestPlan);
+const CASTS = R.casts || ['강동균','강홍구','강효정','김조겸','김찬수','류아라','박광종','박상현','박철완','신준우','이승철','이아람','이정근','이주현','정재훈','황지환'];
+$('planCast').innerHTML = '<option value="">출연 세무사 선택</option>' + CASTS.map(n => `<option value="${esc(n)}">${esc(n)} 세무사</option>`).join('') + '<option value="__etc">직접 입력</option>';
+$('planCast').addEventListener('change', e => { $('planCastEtc').hidden = e.target.value !== '__etc'; if (e.target.value === '__etc') $('planCastEtc').focus(); });
+// 다른 유튜브 영상 링크로 수집
+const ytId = u => { u = (u||'').trim(); const m = u.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/live\/|\/embed\/)([A-Za-z0-9_-]{11})/) || u.match(/^([A-Za-z0-9_-]{11})$/); return m ? m[1] : ''; };
+async function ytInfo(url){
+  for (const api of ['https://www.youtube.com/oembed?format=json&url=', 'https://noembed.com/embed?url=']) {
+    try { const r = await fetch(api + encodeURIComponent(url)); if (r.ok) { const j = await r.json(); if (j.title) return {t: j.title, cn: j.author_name || ''}; } } catch(e) {}
+  }
+  return {t: '', cn: ''};
+}
+$('extForm').addEventListener('submit', async e => {
+  e.preventDefault(); if (!KEY) { askKey(); return; }
+  const url = $('extUrl').value.trim(); const id = ytId(url);
+  if (!id) { toast('유튜브 영상 링크를 확인해 주세요. (youtube.com/watch?v=…, youtu.be/…, shorts 주소)'); return; }
+  if (SAVED.has(id)) { toast('이미 수집한 영상입니다.'); return; }
+  if (V[id]) { toggleCollect(id); $('extUrl').value = ''; return; }
+  const btn = e.target.querySelector('button'); btn.disabled = true;
+  const info = await ytInfo('https://www.youtube.com/watch?v=' + id);
+  try { await DB.doc('collected/' + id).set({id, ext: true, url: /shorts\//.test(url) ? 'https://www.youtube.com/shorts/' + id : 'https://www.youtube.com/watch?v=' + id, t: info.t || '외부 영상 (제목은 기획할 때 확인)', cn: info.cn, vc: 0, short: /shorts\//.test(url), by: UID || '', at: Date.now(), src: 'link'}); $('extUrl').value = ''; toast('수집했습니다. 체크하고 기획하기를 누르면 이 영상을 레퍼런스로 대본을 씁니다.'); }
+  catch(err) { toast('저장하지 못했습니다. 팀 비밀번호와 인터넷 연결을 확인해 주세요.'); }
+  btn.disabled = false;
+});
 
 async function fireTrigger(tid, text){
   if (!MCP || !tid) return false;
@@ -355,15 +400,15 @@ async function fireTrigger(tid, text){
 }
 
 // ---------- plans ----------
-const STEPS = ['대기 중','레퍼런스 분석','대본 작성','노션 저장','완료'];
+const STEPS = ['대기 중','레퍼런스 분석','팩트 확인','대본 작성','노션 저장','완료'];
 function planCard(p){
   const res = p.res || {}; const done = p.status === 'done'; const err = p.status === 'error';
-  const stepIdx = done ? 4 : Math.max(0, STEPS.indexOf(p.step));
+  const stepIdx = done ? STEPS.length - 1 : Math.max(0, STEPS.indexOf(p.step));
   const thumbsRow = (ids, n) => `<div class="vgrid">${(ids||[]).slice(0, n||8).map(x => { const id = typeof x === 'string' ? x : x.id; const v = V[id] || (typeof x === 'object' ? Object.assign({id, kw:[]}, x) : null); if (!v) return ''; return `<div class="vcard">${thumb(v)}<a class="tt" href="${v.short ? ytS(id) : yt(id)}" target="_blank" rel="noopener">${esc(v.t||'')}</a><span class="mt">${esc(chName(v) || v.cn || '')}${v.vc ? ' · ' + fmt(v.vc) : ''}</span>${x.note ? `<span class="mt" style="color:var(--ink2)">${esc(x.note)}</span>` : ''}</div>`; }).join('')}</div>`;
   return `<div class="plan" id="plan-${esc(p.id)}">
     <div class="plan-h" data-toggle="${esc(p.id)}">
       <span class="badge ${done ? 'b-ok' : err ? 'b-low' : 'b-good'}">${done ? '완료' : err ? '오류' : '진행 중'}</span>
-      <h3>${esc(res.title || p.title || '기획 요청')}</h3>
+      <h3>${esc(res.title || p.title || '기획 요청')}</h3>${p.cast ? `<span class="badge b-normal">${esc(p.cast)} 세무사${p.shoot ? ' · ' + esc(p.shoot.slice(5).replace('-','/')) + ' 촬영' : ''}</span>` : ''}
       ${p.notion ? `<a class="btn sm pri" href="${esc(p.notion)}" target="_blank" rel="noopener">노션 기획안 열기</a>` : ''}
       ${p.status === 'deleting' ? '<span class="badge b-stop">삭제 중 · 노션 정리 대기</span>' : `<button class="btn sm plan-del" data-del="${esc(p.id)}" type="button">기획 삭제</button>`}
       <span class="sub">${new Date(p.at || Date.now()).toLocaleString('ko-KR', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'})} 요청</span>
@@ -372,7 +417,7 @@ function planCard(p){
       <div class="steps">${STEPS.map((s,i) => `<span class="step ${i < stepIdx || done ? 'done' : i === stepIdx ? 'on' : ''}">${esc(s)}</span>`).join('')}</div>
       ${err ? `<div class="notice warn">${esc(p.error || '기획을 만들지 못했습니다. 다시 요청해 주세요.')}</div>` : ''}
       ${p.note ? `<div class="foot"><b>요청 메모</b> ${esc(p.note)}</div>` : ''}
-      <div><p class="sec-t">레퍼런스 영상</p>${thumbsRow(p.ids, 4)}</div>
+      <div><p class="sec-t">레퍼런스 영상</p>${thumbsRow((p.ids||[]).map((id, k) => V[id] ? id : Object.assign({id, t: (p.refTitles||[])[k] || (SAVED.get(id)||{}).t || '링크로 추가한 영상', cn: (SAVED.get(id)||{}).cn || ''})), 4)}</div>
       ${done ? `
       ${res.summary ? `<div class="insight">${esc(res.summary)}</div>` : ''}
       <div class="twocol">
@@ -388,7 +433,7 @@ function planCard(p){
       <div><p class="sec-t">같은 주제 · 성과 좋은 썸네일</p>${thumbsRow(res.sameThumbs, 8)}</div>
       <div><p class="sec-t">다른 업종 · 요즘 성과 좋은 썸네일</p>${thumbsRow(res.otherThumbs, 8)}</div>
       ${res.staging ? `<div class="box"><h4>추천 연출 · ${esc(res.staging.form||'')}</h4><ul>${(res.staging.how||[]).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : ''}
-      ` : `<div class="foot">${p.status === 'queued' ? '기획 순서를 기다리는 중입니다. 매일 오전 9시~오후 8시 사이 1시간 안에 시작됩니다.' : '지금 작성 중입니다. 이 화면은 자동으로 갱신됩니다.'}</div>`}
+      ` : `<div class="foot">${p.status === 'queued' ? '기획 순서를 기다리는 중입니다. 보통 10~20분 안에 시작됩니다.' : '지금 작성 중입니다. 이 화면은 자동으로 갱신됩니다.'}</div>`}
     </div></div>`;
 }
 function renderPlans(){
@@ -397,7 +442,7 @@ function renderPlans(){
   $('cntPlans').hidden = !unseen; $('cntPlans').textContent = unseen;
   const queued = list.filter(p => p.status === 'queued').length; const pn = $('plansNote');
   if (queued && IS_OWNER && MCP && R.trig?.plan) { pn.hidden = false; pn.className = 'notice'; pn.innerHTML = `대기 중인 기획 요청 <b>${queued}건</b>이 있습니다. <button class="btn sm pri" id="btnRunPlans" type="button">지금 기획 시작</button>`; }
-  else if (queued && !IS_OWNER) { pn.hidden = false; pn.className = 'notice'; pn.textContent = `대기 중인 기획 요청 ${queued}건 — 매일 오전 9시~오후 8시 사이 1시간 안에 자동으로 시작됩니다.`; }
+  else if (queued && !IS_OWNER) { pn.hidden = false; pn.className = 'notice'; pn.textContent = `대기 중인 기획 요청 ${queued}건 — 보통 10~20분 안에 자동으로 시작됩니다.`; }
   else pn.hidden = true;
   if (!list.length) return;
   $('planList').innerHTML = list.map(planCard).join('');
@@ -419,40 +464,84 @@ $('btnRefresh').addEventListener('click', async () => {
   try {
     await DB.doc('jobs/refresh').set({status: 'queued', by: UID || '', reqAt: Date.now(), from: R.updated});
     const fired = await fireTrigger(R.trig?.refresh, '레이더 최신화 요청');
-    toast('최신화 요청을 접수했습니다. 1시간 안에(오전 9시~오후 8시) 시작되고, 끝나면 화면이 자동으로 새 데이터로 바뀝니다.', 5000);
+    toast('최신화 요청을 접수했습니다. 보통 10~20분 안에 시작되고, 끝나면 화면이 자동으로 새 데이터로 바뀝니다.', 6000);
   } catch(e) { toast('최신화를 요청하지 못했습니다. 팀 비밀번호와 인터넷 연결을 확인해 주세요.'); }
 });
 
 // ---------- drawer ----------
-const dr = $('drawer'), scrim = $('scrim'); let drTab = 'P';
-function openDrawer(h){ const c = byH[h]; if (!c || c.c === 'ours') return; drTab = (c.P||[]).length ? 'P' : 'L'; dr.dataset.h = h; paintDrawer(); dr.hidden = false; scrim.hidden = false; document.body.style.overflow = 'hidden'; dr.querySelector('.x').focus(); }
+const dr = $('drawer'), scrim = $('scrim');
+const ds = {form:'all', range:'all', pb:false, bs:false, k:'vc', dir:-1, lim:40};
+function openDrawer(h){ const c = byH[h]; if (!c || c.c === 'ours') return; Object.assign(ds, {form:'all', range:'all', pb:false, bs:false, k:'vc', dir:-1, lim:40}); dr.dataset.h = h; paintDrawer(true); dr.hidden = false; scrim.hidden = false; document.body.style.overflow = 'hidden'; dr.querySelector('.x').focus(); }
 function closeDrawer(){ dr.hidden = true; scrim.hidden = true; document.body.style.overflow = ''; }
-function paintDrawer(){
-  const c = byH[dr.dataset.h];
-  const src = {P: c.P, L: c.L, S: [...new Set([...(c.SP||[]), ...(c.SL||[])])]}[drTab] || [];
-  let vids = src.map(id => V[id]).filter(Boolean);
-  if (drTab === 'L') vids.sort((a,b) => (a.d ?? 9e9) - (b.d ?? 9e9)); else vids.sort((a,b) => b.vc - a.vc);
-  const row = v => `<div class="vi">${thumb(v)}<div class="vt"><a href="${v.short ? ytS(v.id) : yt(v.id)}" target="_blank" rel="noopener">${esc(v.t)}</a>${v.o ? `<span class="o">${esc(v.o)}</span>` : ''}<span class="o">${esc(ageTxt(v))}</span><span style="display:flex;gap:4px;flex-wrap:wrap">${kwChips(v, 2)}</span></div><div class="r"><span class="big num">${fmt(v.vc)}</span><span style="display:flex;gap:10px">${v.contrib != null ? gr(contribGrade(v.contrib), '기여도') : ''}${v.ratio != null ? gr(perfGrade(v.ratio), '성과도') : ''}</span>${collectBtn(v.id)}</div></div>`;
-  dr.innerHTML = `<div class="dr-h">${av(c)}<div style="min-width:0"><h3>${esc(c.n)}</h3><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${catPill(c)}<span class="badge b-normal">${esc(c.r)}</span><span class="badge b-normal">${esc(c.k)}</span>${c.b ? '<span class="badge b-star">★ 우선 벤치마킹</span>' : ''}${c.hot ? '<span class="badge b-hot">급성장</span>' : ''}</div></div><button class="x" type="button" aria-label="닫기">✕</button></div>
+function chVideos(c){ const ids = new Set([...(c.P||[]), ...(c.L||[]), ...(c.SP||[]), ...(c.SL||[])]); VIDS.forEach(v => { if (v.h === c.h) ids.add(v.id); }); return [...ids].map(id => V[id]).filter(v => v && v.t); }
+function paintDrawer(full){
+  const c = byH[dr.dataset.h]; const all = chVideos(c);
+  const longs = all.filter(v => !v.short), shorts = all.filter(v => v.short);
+  const up30 = all.filter(v => v.d != null && v.d <= 30).length, up90 = longs.filter(v => v.d != null && v.d <= 92);
+  const hits = longs.filter(v => v.contrib != null && v.contrib >= 1.5).length;
+  const best = [...longs].filter(v => v.d != null && v.d <= 183).sort((a,b) => b.vc - a.vc).slice(0, 3);
+  let vids = all.filter(v => (ds.form === 'all' || (ds.form === 'short') === !!v.short) && (ds.range === 'all' || (v.d != null && v.d <= +ds.range)) && (!ds.pb || v.pb) && (!ds.bs || v.bs));
+  if (ds.k === 'd') vids.sort((x,y) => ds.dir < 0 ? ((x.d ?? 9e9) - (y.d ?? 9e9)) : ((y.d ?? -1) - (x.d ?? -1)));
+  else vids.sort((x,y) => ((y[ds.k] ?? -1) - (x[ds.k] ?? -1)) * (ds.dir < 0 ? 1 : -1));
+  const th = (k, l) => `<th class="sortable ${ds.k === k ? 'on' : ''}" data-dk="${k}">${l}${ds.k === k ? (k === 'd' ? (ds.dir < 0 ? ' 최신' : ' 오래된') : (ds.dir < 0 ? ' ▼' : ' ▲')) : ''}</th>`;
+  const rows = vids.slice(0, ds.lim).map(v => `<tr><td>${thumb(v)}</td>
+    <td class="l"><div class="vt" style="min-width:260px"><a href="${v.short ? ytS(v.id) : yt(v.id)}" target="_blank" rel="noopener">${esc(v.t)}</a>${v.o ? `<span class="o">${esc(v.o)}</span>` : ''}${v.pb || v.bs ? `<span class="vbadges" style="margin-top:3px">${v.pb ? '<span class="badge b-star">우선 벤치마킹</span>' : ''}${v.bs ? '<span class="badge b-bs">베스트셀러</span>' : ''}</span>` : ''}</div></td>
+    <td><span class="big num">${fmt(v.vc)}</span>${v.short ? '<span class="sub">쇼츠</span>' : ''}</td>
+    <td>${v.contrib != null ? gr(contribGrade(v.contrib), '평소의 ' + (v.contrib >= 10 ? Math.round(v.contrib) : v.contrib.toFixed(1)) + '배') : '<span class="sub">-</span>'}</td>
+    <td>${v.ratio != null ? gr(perfGrade(v.ratio), Math.round(v.ratio*100) + '%') : '<span class="sub">-</span>'}</td>
+    <td>${v.mk ? `<span class="kwchip" style="font-weight:700">#${esc(v.mk)}</span>` : '<span class="sub">-</span>'}</td>
+    <td class="num">${esc(ageTxt(v)) || '-'}</td><td>${collectBtn(v.id)}</td></tr>`).join('');
+  const listHtml = `<div class="dr-tbl"><table><thead><tr><th>썸네일</th><th class="l" style="text-align:left">제목</th>${th('vc','조회수')}${th('contrib','기여도')}${th('ratio','성과도')}<th>메인 키워드</th>${th('d','업로드')}<th>수집</th></tr></thead><tbody>${rows || '<tr><td colspan="8" style="padding:30px;color:var(--muted)">조건에 맞는 영상이 없습니다.</td></tr>'}</tbody></table></div>${vids.length > ds.lim ? `<button class="btn" id="drMore" type="button" style="align-self:center">더 보기 (${vids.length - ds.lim}개 남음)</button>` : ''}`;
+  if (!full) { dr.querySelector('#drList').innerHTML = listHtml; dr.querySelector('#drCount').innerHTML = `<b>${vids.length}</b>개 영상`; bindDr(); paintThumbs(); return; }
+  dr.innerHTML = `<div class="dr-h">${av(c)}<div style="min-width:0"><h3>${esc(c.n)}</h3><div class="meta">${catPill(c)}<span class="badge b-normal">${esc(c.r)}</span><span class="badge b-normal">${esc(c.k)}</span>${c.b ? '<span class="badge b-star">★ 우선 벤치마킹</span>' : ''}${c.hot ? '<span class="badge b-hot">급성장</span>' : ''}${c.isNew ? '<span class="badge b-new">신규</span>' : ''}</div></div><a class="btn" href="https://www.youtube.com/@${encodeURIComponent(c.h)}" target="_blank" rel="noopener" style="margin-left:auto">유튜브 채널 열기 ↗</a><button class="x" type="button" aria-label="닫기" style="margin-left:8px">✕</button></div>
   <div class="dr-b">
-    <div class="mini"><div><div class="l">구독자</div><div class="v num">${fmt(c.subs)}</div></div><div><div class="l">연평균 증가</div><div class="v num" style="color:var(--brand-d)">+${fmt(c.growth)}</div></div><div><div class="l">롱폼 평소 조회수</div><div class="v num">${fmt(c.base)}</div></div><div><div class="l">쇼츠 평소 조회수</div><div class="v num">${(c.SL||[]).length ? fmt(c.sbase) : '-'}</div></div></div>
-    ${c.note ? `<div class="memo">${esc(c.note)}</div>` : ''}
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="seg dr-tabs"><button data-t="P" aria-pressed="${drTab==='P'}">인기 영상</button><button data-t="L" aria-pressed="${drTab==='L'}">최신 영상</button><button data-t="S" aria-pressed="${drTab==='S'}">쇼츠</button></span><a class="btn" href="https://www.youtube.com/@${encodeURIComponent(c.h)}" target="_blank" rel="noopener">유튜브 채널 열기 ↗</a></div>
-    <div class="vlist">${vids.map(row).join('') || '<p class="sub">수집된 영상이 없습니다.</p>'}</div>
+    <div class="dr-top">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="dr-stats">
+          <div><div class="l">구독자</div><div class="v num">${fmt(c.subs)}</div><div class="s">개설 ${esc((c.j||'').replace('-','.'))} · 운영 ${c.years.toFixed(1)}년</div></div>
+          <div><div class="l">연평균 구독 증가</div><div class="v num" style="color:var(--brand-d)">+${fmt(c.growth)}</div><div class="s">누적 조회수 ${fmt(c.views)}</div></div>
+          <div><div class="l">롱폼 평소 조회수</div><div class="v num">${fmt(c.base)}</div><div class="s">최근 롱폼 중앙값</div></div>
+          <div><div class="l">쇼츠 평소 조회수</div><div class="v num">${shorts.length ? fmt(c.sbase) : '-'}</div><div class="s">쇼츠 ${shorts.length}편 수집</div></div>
+          <div><div class="l">최근 성과도</div><div class="v">${c.active ? gr(perfGrade(c.recent)) : '<span class="sub">업로드 뜸함</span>'}</div><div class="s">${c.active ? '3개월 중앙값 ' + fmt(c.recentMed) + ' · 구독자의 ' + Math.round(c.recent*100) + '%' : ''}</div></div>
+          <div><div class="l">최근 30일 업로드</div><div class="v num">${up30}편</div><div class="s">최근 3개월 롱폼 ${up90.length}편</div></div>
+          <div><div class="l">평소보다 잘된 영상</div><div class="v num">${hits}편</div><div class="s">기여도 1.5배 이상 롱폼</div></div>
+          <div><div class="l">우선 벤치마킹 · 베스트셀러</div><div class="v num">${all.filter(v => v.pb).length} · ${all.filter(v => v.bs).length}</div><div class="s">이 채널 영상 중</div></div>
+        </div>
+        ${c.note ? `<div class="memo">${esc(c.note)}</div>` : ''}
+      </div>
+      <div><p class="sec-t" style="margin:0 0 8px">최근 6개월 가장 잘된 영상</p><div class="dr-best">${best.map(v => bigCard(v)).join('') || '<p class="sub">최근 6개월 롱폼이 없습니다.</p>'}</div></div>
+    </div>
+    <div class="dr-tools">
+      <span class="seg" id="drForm"><button data-v="all" aria-pressed="true">전체</button><button data-v="long" aria-pressed="false">롱폼</button><button data-v="short" aria-pressed="false">쇼츠</button></span>
+      <span class="seg" id="drRange"><button data-v="all" aria-pressed="true">전체 기간</button><button data-v="183" aria-pressed="false">6개월</button><button data-v="92" aria-pressed="false">3개월</button><button data-v="31" aria-pressed="false">1개월</button></span>
+      <label class="chk"><input type="checkbox" id="drPb"> 우선 벤치마킹</label><label class="chk"><input type="checkbox" id="drBs"> 베스트셀러</label>
+      <span class="count" id="drCount" style="margin-left:auto"><b>${vids.length}</b>개 영상</span>
+    </div>
+    <div id="drList" style="display:flex;flex-direction:column;gap:10px">${listHtml}</div>
   </div>`;
   dr.querySelector('.x').addEventListener('click', closeDrawer);
-  dr.querySelectorAll('.dr-tabs button').forEach(b => b.addEventListener('click', () => { drTab = b.dataset.t; paintDrawer(); }));
-  paintThumbs();
+  const seg = (id, key) => dr.querySelector('#' + id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; dr.querySelectorAll('#' + id + ' button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); ds[key] = b.dataset.v; ds.lim = 40; paintDrawer(); });
+  seg('drForm', 'form'); seg('drRange', 'range');
+  dr.querySelector('#drPb').addEventListener('change', e => { ds.pb = e.target.checked; paintDrawer(); });
+  dr.querySelector('#drBs').addEventListener('change', e => { ds.bs = e.target.checked; paintDrawer(); });
+  bindDr(); paintThumbs();
+}
+function bindDr(){
+  dr.querySelectorAll('th[data-dk]').forEach(t => t.addEventListener('click', () => { if (ds.k === t.dataset.dk) ds.dir *= -1; else { ds.k = t.dataset.dk; ds.dir = -1; } paintDrawer(); }));
+  const m = dr.querySelector('#drMore'); if (m) m.addEventListener('click', () => { ds.lim += 40; paintDrawer(); });
 }
 scrim.addEventListener('click', closeDrawer);
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !dr.hidden) closeDrawer(); });
 
 // ---------- first render ----------
 renderOurs();
-bars('barKr', CH.filter(c => c.c === 'kr' && c.active && c.subs >= 5000).sort((a,b) => b.recent - a.recent).slice(0, 10), c => c.recent, c => Math.round(c.recent*100) + '%');
-bars('barOs', CH.filter(c => c.c === 'ost' && c.active && c.subs >= 5000).sort((a,b) => b.recent - a.recent).slice(0, 10), c => c.recent, c => Math.round(c.recent*100) + '%', 'sky');
+// 요즘 반응 좋은 채널: 구독자 2만↑ · 최근 3개월 롱폼 중앙값 1만 회↑(작은 채널의 비율 착시 제거) · 세무사 출연 대담 채널·제외 표시 채널 빼기
+const GUEST = new Set(['tv0505','Buja_Hacker','부동산쇼mvpshow']);
+const reactOk = c => c.active && !c.xr && !GUEST.has(c.h) && c.subs >= 20000 && c.recentMed >= 10000;
+bars('barKr', CH.filter(c => c.c === 'kr' && reactOk(c)).sort((a,b) => b.recent - a.recent).slice(0, 10), c => c.recent, c => Math.round(c.recent*100) + '%');
+bars('barOs', CH.filter(c => c.c === 'ost' && reactOk(c)).sort((a,b) => b.recent - a.recent).slice(0, 10), c => c.recent, c => Math.round(c.recent*100) + '%', 'sky');
 bars('barKrp', CH.filter(c => c.c === 'krp' && c.young).sort((a,b) => b.growth - a.growth).slice(0, 10), c => c.growth, c => '+' + fmt(c.growth), 'sky');
-bars('barGrowth', CH.filter(c => c.c === 'osp' && c.years <= 7).sort((a,b) => b.growth - a.growth).slice(0, 10), c => c.growth, c => '+' + fmt(c.growth));
+bars('barGrowth', CH.filter(c => c.c === 'osp' && c.years <= 7 && c.subs >= 50000).sort((a,b) => b.growth - a.growth).slice(0, 10), c => c.growth, c => '+' + fmt(c.growth));
 renderTopics(); renderFormats(); renderComments(); renderCh(); renderV(); renderRecs(); renderKw(); renderSaved();
 AVLOAD(); paintThumbs();
 try { const v = localStorage.getItem('xr-view'); const h = (location.hash||'').replace('#',''); const want = document.getElementById('v-' + h) ? h : v; if (want && document.getElementById('v-' + want)) go(want); } catch(e) {}
