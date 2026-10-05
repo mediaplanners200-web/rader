@@ -2,7 +2,37 @@
 'use strict';
 const R = window.RADAR; if (!R) { document.querySelector('main').innerHTML = '<div class="notice warn">데이터 파일을 불러오지 못했습니다. 새로고침해 보세요.</div>'; return; }
 const $ = id => document.getElementById(id);
-if (!/github\.io$|^localhost$|^127\./.test(location.hostname) && /^https?:/.test(location.protocol)) { const b = document.createElement('div'); b.className = 'banner-ext'; b.innerHTML = '이 화면은 보관용입니다. 수집·기획하기는 <a href="https://mediaplanners200-web.github.io/rader/expert/" target="_blank" rel="noopener">팀 레이더 사이트</a>에서 해 주세요.'; document.body.prepend(b); }
+// ---------- 레이더별 설정 (data.js 의 R.cfg, 없으면 엑스퍼트 기본값) ----------
+const CFG = Object.assign({
+  rid: 'expert', name: '엑스퍼트', mark: 'X', ourColor: '#1D3E8A', title: '엑스퍼트 레이더',
+  site: 'https://mediaplanners200-web.github.io/rader/expert/', archive: 'https://claude.ai/artifact/PUaro4Eu1i9WiveHzLav9z',
+  cats: [['kr','국내 세무회계','kr'], ['krp','국내 전문직','krdoc'], ['ost','해외 세무회계',''], ['osp','해외 전문직','doc']],
+  bars: [
+    {id:'barKr', t:'국내 세무 · 요즘 반응 좋은 채널', h:'최근 3개월 영상 조회수 중앙값 ÷ 구독자', cats:['kr'], mode:'react'},
+    {id:'barOs', t:'해외 세무 · 요즘 반응 좋은 채널', h:'최근 3개월 영상 조회수 중앙값 ÷ 구독자', cats:['ost'], mode:'react', cls:'sky'},
+    {id:'barKrp', t:'국내 전문직 · 급성장 채널', h:'세무·법률·의료·특허·노무·회계 · 개설 5년 이내 · 연평균 구독자 증가', cats:['krp'], mode:'growth', maxYears:5, cls:'sky'},
+    {id:'barGrowth', t:'해외 전문직 · 급성장 채널', h:'변호사·의사·CPA 등 · 개설 7년 이내 · 연평균 구독자 증가', cats:['osp'], mode:'growth', maxYears:7, minSubs:50000}],
+  ranks: [['kr','국내 세무 채널 순위'], ['os','해외 세무 채널 순위']],
+  topicSeg: [['kr_long','국내 롱폼'], ['kr_short','국내 쇼츠'], ['os_long','해외 롱폼'], ['os_short','해외 쇼츠']],
+  castRole: '세무사', castField: '출연 세무사', apply: '엑스퍼트 적용', hotKr: 20000, hotOs: 70000,
+  react: {subs: 20000, med: 10000}, guest: ['tv0505','Buja_Hacker','부동산쇼mvpshow'],
+  vPh: '키워드 검색 (예: 상속, 법인, 세무조사)', notePh: '요청 메모 (선택) 예: 종이 설명 연출로, 20대 사회초년생 대상',
+  casts: ['강동균','강홍구','강효정','김조겸','김찬수','류아라','박광종','박상현','박철완','신준우','이승철','이아람','이정근','이주현','정재훈','황지환']
+}, R.cfg || {});
+const RID = CFG.rid; const NS = RID === 'expert' ? '' : RID + ':'; // 저장 서버에서 레이더끼리 섞이지 않게 구분
+(function applyCfg(){
+  document.title = CFG.title;
+  const lg = document.querySelector('.logo'); if (lg) { lg.setAttribute('aria-label', CFG.title + ' 홈'); lg.querySelector('.mark').textContent = CFG.mark; lg.querySelector('.nm').innerHTML = '<b>' + CFG.name.replace(/[<&]/g,'') + '</b> 레이더'; }
+  const segHtml = (list, first) => list.map((x, i) => `<button data-v="${x[0]}" aria-pressed="${i === first}">${x[1]}</button>`).join('');
+  const catSeg = '<button data-v="all" aria-pressed="true">전체</button>' + CFG.cats.map(c => `<button data-v="${c[0]}" aria-pressed="false">${c[1]}</button>`).join('');
+  if ($('chCat')) $('chCat').innerHTML = catSeg; if ($('vCat')) $('vCat').innerHTML = catSeg;
+  if ($('topicSeg')) $('topicSeg').innerHTML = segHtml(CFG.topicSeg, 0);
+  CFG.bars.forEach(b => { const el = $(b.id); if (!el) return; const card = el.closest('.card'); card.querySelector('h2').textContent = b.t; card.querySelector('.hint').textContent = b.h; });
+  if ($('vQ')) $('vQ').placeholder = CFG.vPh; if ($('planNote')) $('planNote').placeholder = CFG.notePh;
+  if ($('btnOurs') && R.links?.channel) $('btnOurs').href = R.links.channel;
+  document.querySelectorAll('label[for="planCast"]').forEach(l => l.textContent = CFG.castField);
+})();
+if (!/github\.io$|^localhost$|^127\./.test(location.hostname) && /^https?:/.test(location.protocol)) { const b = document.createElement('div'); b.className = 'banner-ext'; b.innerHTML = '이 화면은 보관용입니다. 수집·기획하기는 <a href="' + CFG.site + '" target="_blank" rel="noopener">팀 레이더 사이트</a>에서 해 주세요.'; document.body.prepend(b); }
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt = n => { n = +n || 0; if (n >= 1e8) { const v = n/1e8; return (v>=10?Math.round(v):v.toFixed(1).replace(/\.0$/,''))+'억'; } if (n >= 1e4) { const v = n/1e4; return (v>=100?Math.round(v):v.toFixed(1).replace(/\.0$/,''))+'만'; } return Math.round(n).toLocaleString('ko-KR'); };
 const median = a => { if (!a.length) return 0; const s = [...a].sort((x,y)=>x-y), m = Math.floor(s.length/2); return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
@@ -12,7 +42,7 @@ const ytS = id => 'https://www.youtube.com/shorts/' + encodeURIComponent(id);
 const [uy,um,ud] = R.updated.split('-').map(Number); const TODAY = new Date(uy, um-1, ud);
 const daysSince = pd => { if (!pd) return null; const [y,m,d] = pd.split('-').map(Number); return Math.max(0, Math.round((TODAY - new Date(y,m-1,d)) / 864e5)); };
 const PAL = ['#1D6BF3','#12A36B','#7C5CFA','#E08700','#E5484D','#0EA5E9','#DB2777','#0F9488','#8B5CF6','#EA580C','#16A34A','#4F46E5'];
-const CAT = {kr:['국내 세무회계','kr'], krp:['국내 전문직','krdoc'], ost:['해외 세무회계',''], osp:['해외 전문직','doc']};
+const CAT = {}; CFG.cats.forEach(c => CAT[c[0]] = [c[1], c[2]]);
 // 깃허브 사이트에서는 유튜브 원본 고화질 이미지를 바로 씀(아티팩트는 외부 이미지가 막혀 내장 썸네일 사용)
 const EXT = /github\.io$|^localhost$|^127\./.test(location.hostname);
 const yimg = (id, q) => 'https://i.ytimg.com/vi/' + encodeURIComponent(id) + '/' + q + '.jpg';
@@ -46,10 +76,10 @@ CH.forEach(c => {
   c.base = median(lat.length >= 3 ? lat : longs.map(v => v.vc)) || 1;
   const sl = [...(c.SL||[]), ...(c.SP||[])].map(id => V[id]).filter(Boolean).map(v => v.vc);
   c.sbase = median(sl) || 1;
-  c.young = c.years <= 5; c.hot = c.years < 4 && c.growth >= (/^kr/.test(c.c) ? 20000 : 70000);
+  c.young = c.years <= 5; c.hot = c.years < 4 && c.growth >= (/^kr/.test(c.c) ? CFG.hotKr : CFG.hotOs);
   c.ini = [...(c.n||c.h).replace(/^(Dr\.?|Doctor)\s*/i,'')][0].toUpperCase();
 });
-OURS.color = '#1D3E8A'; OURS.ini = 'X';
+OURS.color = CFG.ourColor; OURS.ini = CFG.mark;
 Object.values(V).forEach(v => {
   const c = v.ch;
   v.ratio = c && c.subs ? v.vc / c.subs : null;
@@ -102,7 +132,7 @@ document.addEventListener('click', async e => {
 });
 document.addEventListener('click', async e => { if (!e.target.closest('#btnRunPlans')) return; const ok = await fireTrigger(R.trig?.plan, '기획 요청'); toast(ok ? '기획을 시작했습니다. 보통 10~20분 걸리고, 끝나면 여기서 알려 드립니다.' : '시작하지 못했습니다. 잠시 후 다시 눌러 주세요.', 5000); });
 const SAVED = new Map(); const PLANS = new Map(); let REFRESH = null;
-let seenPlans = {}; try { seenPlans = JSON.parse(localStorage.getItem('xr-seen') || '{}'); } catch(e) {}
+let seenPlans = {}; try { seenPlans = JSON.parse(localStorage.getItem(NS + 'xr-seen') || '{}'); } catch(e) {}
 const toast = (m, ms) => { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, ms || 2600); };
 const collectBtn = id => `<button class="collect ${SAVED.has(id) ? 'on' : ''}" data-collect="${esc(id)}" type="button">${SAVED.has(id) ? '✓ 수집됨' : '＋ 수집'}</button>`;
 function refreshCollectBtns(){ document.querySelectorAll('[data-collect]').forEach(b => { const on = SAVED.has(b.dataset.collect); b.classList.toggle('on', on); b.textContent = on ? '✓ 수집됨' : '＋ 수집'; }); }
@@ -115,10 +145,10 @@ function noDb(what){
 }
 async function toggleCollect(id){
   if (!KEY) { askKey(); go('saved'); return; }
-  const ref = DB.doc('collected/' + id);
+  const ref = DB.doc('collected/' + NS + id);
   try {
     if (SAVED.has(id)) { await ref.delete(); toast('수집을 취소했습니다'); }
-    else { const v = V[id] || {}; await ref.set({id, t: v.t || '', o: v.o || '', cn: chName(v), vc: v.vc || 0, short: !!v.short, by: UID || '', at: Date.now(), src: location.hash.replace('#','') || 'videos'}); toast('수집했습니다. 수집한 영상 탭에서 기획하기를 누를 수 있습니다.'); }
+    else { const v = V[id] || {}; await ref.set({id: NS + id, vid: id, r: RID, t: v.t || '', o: v.o || '', cn: chName(v), vc: v.vc || 0, short: !!v.short, by: UID || '', at: Date.now(), src: location.hash.replace('#','') || 'videos'}); toast('수집했습니다. 수집한 영상 탭에서 기획하기를 누를 수 있습니다.'); }
   } catch(e) { toast('저장하지 못했습니다. 팀 비밀번호와 인터넷 연결을 확인해 주세요.'); }
 }
 
@@ -126,7 +156,7 @@ async function toggleCollect(id){
 function go(view){
   document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.view === view)));
   document.querySelectorAll('main > .view').forEach(v => v.hidden = v.id !== 'v-' + view);
-  try { localStorage.setItem('xr-view', view); } catch(e) {}
+  try { localStorage.setItem(NS + 'xr-view', view); } catch(e) {}
   if (view === 'plans') markPlansSeen();
   window.scrollTo({top:0}); paintThumbs();
 }
@@ -158,7 +188,7 @@ function renderOurs(){
       <div class="kpi"><span class="l">쇼츠 평소 조회수</span><span class="v num">${fmt(S.shortMed)}</span><span class="s">최근 쇼츠 ${S.shortN}편 중앙값</span></div>
       <div class="kpi"><span class="l">최근 30일 업로드</span><span class="v num">${S.up30L + S.up30S}편</span><span class="s">롱폼 ${S.up30L} · 쇼츠 ${S.up30S}</span></div>
     </div>
-    <div class="ranks">${rankList('국내 세무 채널 순위', (R.ranks||{}).kr)}${rankList('해외 세무 채널 순위', (R.ranks||{}).os)}</div>
+    <div class="ranks">${CFG.ranks.map(x => rankList(x[1], (R.ranks||{})[x[0]])).join('')}</div>
   </div>
   <div class="ours-r">
     <p class="sec-t">최근 업로드 성과 <span style="font-weight:400">(채널 평소 대비)</span></p>
@@ -200,7 +230,7 @@ function renderFormats(){
     <div class="twocol"><div class="box"><h4>공통점</h4><ul>${(f.common||[]).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div><div class="box"><h4>지금 트렌드</h4>${esc(f.trend)}</div></div>
     <div class="bigv">${(f.ids||[]).filter(id => V[id]).slice(0,8).map(id => bigCard(V[id])).join('')}</div>
     <div class="foot">${(f.chs||[]).filter(h => byH[h]).map(h => `<button class="linkchip" data-open="${esc(h)}" type="button">${av(byH[h])}<span class="t">${esc(byH[h].n)}</span></button>`).join('')}</div>
-    ${f.for ? `<div class="insight"><b>엑스퍼트 적용</b> · ${esc(f.for)}</div>` : ''}
+    ${f.for ? `<div class="insight"><b>${esc(CFG.apply)}</b> · ${esc(f.for)}</div>` : ''}
   </div>`).join('');
   paintThumbs();
 }
@@ -224,7 +254,7 @@ function renderCh(){
   $('chCount').innerHTML = `<b>${a.length}</b>개 채널`;
   document.querySelectorAll('#v-channels th.sortable').forEach(th => { const on = th.dataset.k === cs.k; th.classList.toggle('on', on); th.innerHTML = th.textContent.replace(/[▲▼]/g,'') + (on ? `<span class="ar">${cs.dir < 0 ? '▼' : '▲'}</span>` : ''); });
   $('chBody').innerHTML = a.map(c => {
-    const marks = [c.b ? '<span class="badge b-star">★ 우선</span>' : '', c.isNew ? '<span class="badge b-new">신규</span>' : '', c.hot ? '<span class="badge b-hot">급성장</span>' : '', !c.active ? '<span class="badge b-stop">업로드 뜸함</span>' : ''].filter(Boolean).join(' ');
+    const marks = [c.b ? '<span class="badge b-star">★ 우선</span>' : '', c.isNew ? '<span class="badge b-new">신규</span>' : '', c.w ? '<span class="badge b-stop" title="' + esc(c.w) + '">광고 조회수 의심</span>' : '', c.hot ? '<span class="badge b-hot">급성장</span>' : '', !c.active ? '<span class="badge b-stop">업로드 뜸함</span>' : ''].filter(Boolean).join(' ');
     return `<tr><td class="l"><button data-open="${esc(c.h)}" type="button" style="border:0;background:none;padding:0;cursor:pointer;text-align:left"><span class="ch">${av(c)}<span><span class="nm">${esc(c.n)}</span><span class="rl" style="display:block">${esc(c.r)}</span></span></span></button></td>
     <td>${catPill(c)}</td><td>${esc(c.k)}</td><td><span class="big num">${fmt(c.subs)}</span></td>
     <td><span class="big num" style="color:var(--brand-d)">+${fmt(c.growth)}</span><span class="sub">운영 ${c.years.toFixed(1)}년</span></td>
@@ -356,12 +386,12 @@ async function requestPlan(){
   if (!SEL.size) return; if (!KEY) { askKey(); return; }
   const ids = [...SEL]; const note = $('planNote').value.trim();
   const cast = $('planCast').value === '__etc' ? $('planCastEtc').value.trim() : $('planCast').value; const shoot = $('planDate').value || '';
-  if (!cast) { toast('이번 영상에 출연하는 세무사님을 선택해 주세요.'); $('planCast').focus(); return; }
+  if (!cast) { toast('이번 영상에 출연하는 ' + CFG.castRole + '님을 선택해 주세요.'); $('planCast').focus(); return; }
   const pid = 'p' + Date.now().toString(36);
   const first = V[ids[0]] || SAVED.get(ids[0]) || {};
   $('btnPlan').disabled = true;
   try {
-    await DB.doc('plans/' + pid).set({id: pid, ids, ext: ids.filter(id => (SAVED.get(id)||{}).ext).map(id => ({id, url: SAVED.get(id).url})), cast, shoot, note, by: UID || '', at: Date.now(), status: 'queued', step: '대기 중', title: first.t || '', refTitles: ids.map(id => (V[id] || SAVED.get(id) || {}).t || '')});
+    await DB.doc('plans/' + pid).set({id: pid, r: RID, ids, ext: ids.filter(id => (SAVED.get(id)||{}).ext).map(id => ({id, url: SAVED.get(id).url})), cast, shoot, note, by: UID || '', at: Date.now(), status: 'queued', step: '대기 중', title: first.t || '', refTitles: ids.map(id => (V[id] || SAVED.get(id) || {}).t || '')});
     SEL.clear(); $('planNote').value = ''; $('planDate').value = ''; renderSaved();
     const fired = await fireTrigger(R.trig?.plan, '기획 요청 ' + pid);
     toast('기획 요청을 접수했습니다. 매일 9·12·15·18·21시에 확인해서 작성을 시작하고, 노션 컨텐츠 진행도에 올라갑니다. 끝나면 여기서 알려 드립니다.', 6000);
@@ -370,8 +400,8 @@ async function requestPlan(){
   $('btnPlan').disabled = false;
 }
 $('btnPlan').addEventListener('click', requestPlan);
-const CASTS = R.casts || ['강동균','강홍구','강효정','김조겸','김찬수','류아라','박광종','박상현','박철완','신준우','이승철','이아람','이정근','이주현','정재훈','황지환'];
-$('planCast').innerHTML = '<option value="">출연 세무사 선택</option>' + CASTS.map(n => `<option value="${esc(n)}">${esc(n)} 세무사</option>`).join('') + '<option value="__etc">직접 입력</option>';
+const CASTS = R.casts || CFG.casts;
+$('planCast').innerHTML = '<option value="">' + esc(CFG.castField) + ' 선택</option>' + CASTS.map(n => `<option value="${esc(n)}">${esc(n)} ${esc(CFG.castRole)}</option>`).join('') + '<option value="__etc">직접 입력</option>';
 $('planCast').addEventListener('change', e => { $('planCastEtc').hidden = e.target.value !== '__etc'; if (e.target.value === '__etc') $('planCastEtc').focus(); });
 // 다른 유튜브 영상 링크로 수집
 const ytId = u => { u = (u||'').trim(); const m = u.match(/(?:youtu\.be\/|[?&]v=|\/shorts\/|\/live\/|\/embed\/)([A-Za-z0-9_-]{11})/) || u.match(/^([A-Za-z0-9_-]{11})$/); return m ? m[1] : ''; };
@@ -389,7 +419,7 @@ $('extForm').addEventListener('submit', async e => {
   if (V[id]) { toggleCollect(id); $('extUrl').value = ''; return; }
   const btn = e.target.querySelector('button'); btn.disabled = true;
   const info = await ytInfo('https://www.youtube.com/watch?v=' + id);
-  try { await DB.doc('collected/' + id).set({id, ext: true, url: /shorts\//.test(url) ? 'https://www.youtube.com/shorts/' + id : 'https://www.youtube.com/watch?v=' + id, t: info.t || '외부 영상 (제목은 기획할 때 확인)', cn: info.cn, vc: 0, short: /shorts\//.test(url), by: UID || '', at: Date.now(), src: 'link'}); $('extUrl').value = ''; toast('수집했습니다. 체크하고 기획하기를 누르면 이 영상을 레퍼런스로 대본을 씁니다.'); }
+  try { await DB.doc('collected/' + NS + id).set({id: NS + id, vid: id, r: RID, ext: true, url: /shorts\//.test(url) ? 'https://www.youtube.com/shorts/' + id : 'https://www.youtube.com/watch?v=' + id, t: info.t || '외부 영상 (제목은 기획할 때 확인)', cn: info.cn, vc: 0, short: /shorts\//.test(url), by: UID || '', at: Date.now(), src: 'link'}); $('extUrl').value = ''; toast('수집했습니다. 체크하고 기획하기를 누르면 이 영상을 레퍼런스로 대본을 씁니다.'); }
   catch(err) { toast('저장하지 못했습니다. 팀 비밀번호와 인터넷 연결을 확인해 주세요.'); }
   btn.disabled = false;
 });
@@ -408,7 +438,7 @@ function planCard(p){
   return `<div class="plan" id="plan-${esc(p.id)}">
     <div class="plan-h" data-toggle="${esc(p.id)}">
       <span class="badge ${done ? 'b-ok' : err ? 'b-low' : 'b-good'}">${done ? '완료' : err ? '오류' : '진행 중'}</span>
-      <h3>${esc(res.title || p.title || '기획 요청')}</h3>${p.cast ? `<span class="badge b-normal">${esc(p.cast)} 세무사${p.shoot ? ' · ' + esc(p.shoot.slice(5).replace('-','/')) + ' 촬영' : ''}</span>` : ''}
+      <h3>${esc(res.title || p.title || '기획 요청')}</h3>${p.cast ? `<span class="badge b-normal">${esc(p.cast)} ${esc(CFG.castRole)}${p.shoot ? ' · ' + esc(p.shoot.slice(5).replace('-','/')) + ' 촬영' : ''}</span>` : ''}
       ${p.notion ? `<a class="btn sm pri" href="${esc(p.notion)}" target="_blank" rel="noopener">노션 기획안 열기</a>` : ''}
       ${p.status === 'deleting' ? '<span class="badge b-stop">삭제 중 · 노션 정리 대기</span>' : `<button class="btn sm plan-del" data-del="${esc(p.id)}" type="button">기획 삭제</button>`}
       <span class="sub">${new Date(p.at || Date.now()).toLocaleString('ko-KR', {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'})} 요청</span>
@@ -449,7 +479,7 @@ function renderPlans(){
   list.forEach(p => { if (p.res?.tf) loadBucket(0, p.res.tf); });
   paintThumbs();
 }
-function markPlansSeen(){ let ch = false; PLANS.forEach(p => { if (p.status === 'done' && !seenPlans[p.id]) { seenPlans[p.id] = 1; ch = true; } }); if (ch) { try { localStorage.setItem('xr-seen', JSON.stringify(seenPlans)); } catch(e) {} renderPlans(); } }
+function markPlansSeen(){ let ch = false; PLANS.forEach(p => { if (p.status === 'done' && !seenPlans[p.id]) { seenPlans[p.id] = 1; ch = true; } }); if (ch) { try { localStorage.setItem(NS + 'xr-seen', JSON.stringify(seenPlans)); } catch(e) {} renderPlans(); } }
 
 // ---------- refresh ----------
 function renderRefresh(){
@@ -462,7 +492,8 @@ $('btnRefresh').addEventListener('click', async () => {
   if (!KEY) { askKey(); go('saved'); return; }
   if (REFRESH && (REFRESH.status === 'queued' || REFRESH.status === 'running')) { toast('이미 최신화하고 있습니다. 끝나면 화면이 자동으로 바뀝니다.'); return; }
   try {
-    await DB.doc('jobs/refresh').set({status: 'queued', by: UID || '', reqAt: Date.now(), from: R.updated});
+    if (RID === 'expert') await DB.doc('jobs/refresh').set({status: 'queued', by: UID || '', reqAt: Date.now(), from: R.updated});
+    else await api({a: 'update', col: 'plans', id: 'refresh:' + RID, data: {id: 'refresh:' + RID, r: RID, kind: 'refresh', status: 'queued', reqAt: Date.now(), from: R.updated}});
     const fired = await fireTrigger(R.trig?.refresh, '레이더 최신화 요청');
     toast('최신화 요청을 접수했습니다. 매일 9·12·15·18·21시에 확인해서 시작하고, 끝나면 화면이 자동으로 새 데이터로 바뀝니다.', 6000);
   } catch(e) { toast('최신화를 요청하지 못했습니다. 팀 비밀번호와 인터넷 연결을 확인해 주세요.'); }
@@ -507,7 +538,7 @@ function paintDrawer(full){
           <div><div class="l">평소보다 잘된 영상</div><div class="v num">${hits}편</div><div class="s">기여도 1.5배 이상 롱폼</div></div>
           <div><div class="l">우선 벤치마킹 · 베스트셀러</div><div class="v num">${all.filter(v => v.pb).length} · ${all.filter(v => v.bs).length}</div><div class="s">이 채널 영상 중</div></div>
         </div>
-        ${c.note ? `<div class="memo">${esc(c.note)}</div>` : ''}
+        ${c.note ? `<div class="memo">${esc(c.note)}</div>` : ''}${c.w ? `<div class="notice warn" style="margin:0">⚠ ${esc(c.w)}</div>` : ''}
       </div>
       <div><p class="sec-t" style="margin:0 0 8px">최근 6개월 가장 잘된 영상</p><div class="dr-best">${best.map(v => bigCard(v)).join('') || '<p class="sub">최근 6개월 롱폼이 없습니다.</p>'}</div></div>
     </div>
@@ -536,15 +567,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !dr.hidden
 // ---------- first render ----------
 renderOurs();
 // 요즘 반응 좋은 채널: 구독자 2만↑ · 최근 3개월 롱폼 중앙값 1만 회↑(작은 채널의 비율 착시 제거) · 세무사 출연 대담 채널·제외 표시 채널 빼기
-const GUEST = new Set(['tv0505','Buja_Hacker','부동산쇼mvpshow']);
-const reactOk = c => c.active && !c.xr && !GUEST.has(c.h) && c.subs >= 20000 && c.recentMed >= 10000;
-bars('barKr', CH.filter(c => c.c === 'kr' && reactOk(c)).sort((a,b) => b.recent - a.recent).slice(0, 10), c => c.recent, c => Math.round(c.recent*100) + '%');
-bars('barOs', CH.filter(c => c.c === 'ost' && reactOk(c)).sort((a,b) => b.recent - a.recent).slice(0, 10), c => c.recent, c => Math.round(c.recent*100) + '%', 'sky');
-bars('barKrp', CH.filter(c => c.c === 'krp' && c.young).sort((a,b) => b.growth - a.growth).slice(0, 10), c => c.growth, c => '+' + fmt(c.growth), 'sky');
-bars('barGrowth', CH.filter(c => c.c === 'osp' && c.years <= 7 && c.subs >= 50000).sort((a,b) => b.growth - a.growth).slice(0, 10), c => c.growth, c => '+' + fmt(c.growth));
+const GUEST = new Set(CFG.guest || []);
+const reactOk = (c, rc) => { rc = rc || CFG.react; return c.active && !c.xr && !c.w && !GUEST.has(c.h) && c.subs >= rc.subs && c.recentMed >= rc.med; };
+CFG.bars.forEach(b => { const inC = c => b.cats.includes(c.c);
+  if (b.mode === 'react') bars(b.id, CH.filter(c => inC(c) && reactOk(c, b.react)).sort((x,y) => y.recent - x.recent).slice(0, 10), c => c.recent, c => Math.round(c.recent*100) + '%', b.cls);
+  else bars(b.id, CH.filter(c => inC(c) && c.years <= (b.maxYears || 99) && c.subs >= (b.minSubs || 0)).sort((x,y) => y.growth - x.growth).slice(0, 10), c => c.growth, c => '+' + fmt(c.growth), b.cls); });
 renderTopics(); renderFormats(); renderComments(); renderCh(); renderV(); renderRecs(); renderKw(); renderSaved();
 AVLOAD(); paintThumbs();
-try { const v = localStorage.getItem('xr-view'); const h = (location.hash||'').replace('#',''); const want = document.getElementById('v-' + h) ? h : v; if (want && document.getElementById('v-' + want)) go(want); } catch(e) {}
+try { const v = localStorage.getItem(NS + 'xr-view'); const h = (location.hash||'').replace('#',''); const want = document.getElementById('v-' + h) ? h : v; if (want && document.getElementById('v-' + want)) go(want); } catch(e) {}
 
 // ---------- 저장 서버(구글 시트) ----------
 const API = 'https://script.google.com/macros/s/AKfycbw9jnfyI3sPX-p8axDUj_S7_6RKQmgRIWtH3NFR5z-7odQ_j86DVWyDVJr0vIVBAw8Zxw/exec';
@@ -571,11 +601,12 @@ async function sync(force){
   try {
     const r = await fetch(API + '?k=' + encodeURIComponent(KEY)); const j = await r.json();
     if (!j.ok) { askKey('팀 비밀번호가 맞지 않습니다. 다시 입력해 주세요.'); return; }
-    SAVED.clear(); (j.collected || []).forEach(d => SAVED.set(d.id, d));
+    const mine = d => (d.r || 'expert') === RID;
+    SAVED.clear(); (j.collected || []).filter(mine).forEach(d => { const vid = d.vid || d.id; SAVED.set(vid, Object.assign({}, d, {id: vid})); });
     const before = new Map([...PLANS].map(([k,v]) => [k, v.status]));
-    PLANS.clear(); (j.plans || []).forEach(d => PLANS.set(d.id, d));
+    PLANS.clear(); (j.plans || []).filter(d => mine(d) && !/^refresh:/.test(d.id)).forEach(d => PLANS.set(d.id, d));
     if (!firstPlans) PLANS.forEach((p, id) => { if (p.status === 'done' && before.get(id) && before.get(id) !== 'done') { toast('기획이 완료됐습니다: ' + (p.res?.title || p.title || ''), 6000); $('flash').hidden = false; $('flash').className = 'notice ok'; $('flash').innerHTML = `기획 완료 · <b>${esc(p.res?.title || p.title || '')}</b> — 기획 중인 영상 탭과 노션에서 확인하세요.`; } });
-    firstPlans = false; REFRESH = j.refresh || null;
+    firstPlans = false; REFRESH = RID === 'expert' ? (j.refresh || null) : ((j.plans || []).find(d => d.id === 'refresh:' + RID) || null);
     refreshCollectBtns(); renderSaved(); renderPlans(); renderRefresh();
   } catch(e) { $('savedNote').hidden = false; $('savedNote').className = 'notice warn'; $('savedNote').textContent = '저장 서버에 연결하지 못했습니다. 잠시 후 새로고침해 주세요.'; }
   finally { syncing = false; }
