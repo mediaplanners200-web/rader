@@ -61,7 +61,7 @@ window.RADAR_T = obj => { Object.assign(TH, obj); paintThumbs(); };
 const bucketOf = id => hash(id) % NB;
 function loadBucket(b, file){
   const key = file || ('thumbs/b' + b + '.js'); if (loadedB[key]) return; loadedB[key] = 1;
-  const s = document.createElement('script'); s.src = key; s.async = true; document.head.appendChild(s);
+  const s = document.createElement('script'); s.src = key + '?v=' + (R.updated||''); s.async = true; document.head.appendChild(s);
 }
 let paintQ = 0;
 function paintThumbs(){
@@ -70,7 +70,7 @@ function paintThumbs(){
     document.querySelectorAll('img[data-aid]:not([src])').forEach(img => { const d = (window.RADAR_AV||{})[img.dataset.aid]; if (d) img.src = 'data:image/webp;base64,' + d; });
   });
 }
-const AVLOAD = () => { if (!window.RADAR_AV && !loadedB['av']) { loadedB['av'] = 1; const s = document.createElement('script'); s.src = 'avatars.js'; s.onload = paintThumbs; document.head.appendChild(s); } };
+const AVLOAD = () => { if (!window.RADAR_AV && !loadedB['av']) { loadedB['av'] = 1; const s = document.createElement('script'); s.src = 'avatars.js?v=' + (R.updated||''); s.onload = paintThumbs; document.head.appendChild(s); } };
 
 const av = c => `<span class="av" style="background:${c.color}">${esc(c.ini)}<img data-aid="${esc(c.h)}" alt=""></span>`;
 const thumb = (v, opts) => { opts = opts || {}; const color = v.ch ? v.ch.color : PAL[hash(v.h||v.cn||v.id) % PAL.length];
