@@ -27,6 +27,9 @@ const RID = CFG.rid; const NS = RID === 'expert' ? '' : RID + ':'; // 저장 서
   const catSeg = '<button data-v="all" aria-pressed="true">전체</button>' + CFG.cats.map(c => `<button data-v="${c[0]}" aria-pressed="false">${c[1]}</button>`).join('');
   if ($('chCat')) $('chCat').innerHTML = catSeg; if ($('vCat')) $('vCat').innerHTML = catSeg;
   if ($('topicSeg')) $('topicSeg').innerHTML = segHtml(CFG.topicSeg, 0);
+  { let host = null; CFG.bars.forEach(b => { const el = $(b.id); if (el) { host = el.closest('.grid2'); return; } if (!host) return; // 템플릿에 없는 막대 카드는 새로 만듦
+      let g = host.nextElementSibling; if (!g || !g.classList.contains('grid2') || g.children.length >= 2 || !g.querySelector('.bars')) { g = document.createElement('div'); g.className = 'grid2'; host.after(g); }
+      g.insertAdjacentHTML('beforeend', `<div class="card"><div class="card-h"><h2></h2><span class="hint"></span></div><div class="card-b"><div class="bars" id="${b.id}"></div></div></div>`); host = g; }); }
   CFG.bars.forEach(b => { const el = $(b.id); if (!el) return; const card = el.closest('.card'); card.querySelector('h2').textContent = b.t; card.querySelector('.hint').textContent = b.h; });
   if ($('vQ')) $('vQ').placeholder = CFG.vPh; if ($('planNote')) $('planNote').placeholder = CFG.notePh;
   if ($('btnOurs') && R.links?.channel) $('btnOurs').href = R.links.channel;
@@ -324,6 +327,43 @@ function capsHtml(r, ids){
   return out.length ? `<div class="caps">${out.join('')}</div>` : '<p class="sub" style="margin:0">영상 장면 캡처는 다음 최신화 때 레퍼런스 영상에서 자동으로 채워집니다.</p>';
 }
 
+// ---------- 연출 주제 벤치마킹 제안 (directs.js: window.RADAR_DIR) ----------
+let recMode = 'topic';
+function dirInit(){
+  if (!CFG.directs) return; const ph = document.querySelector('#v-recs .page-h'); if (!ph || $('recMode')) return;
+  ph.insertAdjacentHTML('afterend', `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="seg" id="recMode"><button data-v="topic" aria-pressed="true">콘텐츠 주제 벤치마킹 제안</button><button data-v="dir" aria-pressed="false">연출 주제 벤치마킹 제안</button></span><span class="sub" id="recModeHint" style="display:inline"></span></div><div id="dirList" class="view" hidden></div>`);
+  const d0 = $('recDesc').innerHTML;
+  segBind('recMode', v => { recMode = v; const dir = v === 'dir';
+    $('recList').hidden = dir; $('recFoot').closest('.card').hidden = dir; $('dirList').hidden = !dir;
+    $('recDesc').innerHTML = dir ? '급성장했거나 이미 큰 성형외과·피부과·전문직 채널들이 <b>요즘 실제로 쓰는 촬영 구도와 연출 형식</b>을 장면 캡처와 함께 정리했습니다. 캡처를 누르면 그 장면부터 재생됩니다.' : d0;
+    if (dir) dirLoad(); try { localStorage.setItem(NS + 'xr-recmode', v); } catch(e) {} });
+  try { if (localStorage.getItem(NS + 'xr-recmode') === 'dir') $('recMode').querySelector('[data-v="dir"]').click(); } catch(e) {}
+  if (location.hash === '#directs') { go('recs'); $('recMode').querySelector('[data-v="dir"]').click(); }
+}
+function dirLoad(){
+  if (window.RADAR_DIR) return renderDir(); if (loadedB['dir']) return; loadedB['dir'] = 1;
+  $('dirList').innerHTML = '<div class="card" style="padding:24px;color:var(--muted)">연출 캡처를 불러오는 중…</div>';
+  const s = document.createElement('script'); s.src = 'directs.js?v=' + (R.updated||''); s.onload = renderDir; s.onerror = () => { $('dirList').innerHTML = '<div class="notice warn">연출 자료를 불러오지 못했습니다. 새로고침해 보세요.</div>'; }; document.head.appendChild(s);
+}
+function renderDir(){
+  const D = window.RADAR_DIR || {}; const IMG = D.img || {};
+  const refCard = r => { const v = V[r.id]; if (v) return bigCard(v);
+    return `<div class="vcard"><a class="tt" href="${r.short ? ytS(r.id) : yt(r.id)}" target="_blank" rel="noopener">${esc(r.t)}</a><span class="mt">${esc(r.ch)}${r.vc ? ' · 조회수 ' + fmt(r.vc) : ''}${r.when ? ' · ' + esc(r.when) : ''}</span></div>`; };
+  $('dirList').innerHTML = (D.intro ? `<div class="card" style="padding:16px 18px;font-size:14px;line-height:1.7;color:var(--ink2)">${D.intro}</div>` : '') + (D.items||[]).map((x, i) => {
+    const caps = []; (x.refs||[]).forEach(r => (r.caps||[]).forEach(c => { if (IMG[c.k]) caps.push(`<figure><a href="${r.short ? ytS(r.id) : yt(r.id) + '&t=' + Math.round(c.t) + 's'}" target="_blank" rel="noopener"><img src="${IMG[c.k]}" alt="${esc(r.ch)} 장면 ${mmss(c.t)}" loading="lazy" style="${r.short ? 'object-fit:contain;background:#000' : ''}"></a><figcaption>${esc(r.ch)} · ${mmss(c.t)}${c.n ? ' — ' + esc(c.n) : ''}</figcaption></figure>`); }));
+    return `<div class="card rec">
+      <div class="rec-h"><div><div class="rank">연출 ${i+1} · <span class="badge ${x.hot ? 'b-hot' : 'b-star'}">${esc(x.tag||'')}</span></div><h3>${esc(x.t)}</h3></div></div>
+      <p style="margin:0;color:var(--ink2);font-size:14px;line-height:1.65">${esc(x.sum)}</p>
+      ${x.why ? `<p class="sub" style="margin:0;font-size:13px;line-height:1.6">${esc(x.why)}</p>` : ''}
+      <div class="sec"><h4>장면 캡처 <span class="sub" style="display:inline;font-weight:400">누르면 그 장면부터 재생</span></h4><div class="caps">${caps.join('')}</div></div>
+      <div class="twocol">
+        <div class="box"><h4>카메라 구도·연출 포인트</h4><ul>${(x.cam||[]).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>
+        <div class="box"><h4>${esc(CFG.apply)} 방안</h4><ul>${(x.apply||[]).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>
+      </div>
+      <div class="sec"><h4>레퍼런스 영상</h4><div class="bigv">${(x.refs||[]).map(refCard).join('')}</div></div>
+    </div>`; }).join('') + (D.foot ? `<div class="card" style="padding:16px 18px"><div class="foot">${D.foot}</div></div>` : '');
+  paintThumbs();
+}
 function renderRecs(){
   $('recList').innerHTML = (R.recs||[]).map((r, i) => { const ids = (r.ids||[]).filter(id => V[id]);
         return `<div class="card rec">
@@ -576,7 +616,7 @@ const reactOk = (c, rc) => { rc = rc || CFG.react; return c.active && !c.xr && !
 CFG.bars.forEach(b => { const inC = c => b.cats.includes(c.c);
   if (b.mode === 'react') bars(b.id, CH.filter(c => inC(c) && reactOk(c, b.react)).sort((x,y) => y.recent - x.recent).slice(0, 10), c => c.recent, c => Math.round(c.recent*100) + '%', b.cls);
   else bars(b.id, CH.filter(c => inC(c) && c.years <= (b.maxYears || 99) && c.subs >= (b.minSubs || 0)).sort((x,y) => y.growth - x.growth).slice(0, 10), c => c.growth, c => '+' + fmt(c.growth), b.cls); });
-renderTopics(); renderFormats(); renderComments(); renderCh(); renderV(); renderRecs(); renderKw(); renderSaved();
+renderTopics(); renderFormats(); renderComments(); renderCh(); renderV(); renderRecs(); renderKw(); renderSaved(); dirInit();
 AVLOAD(); paintThumbs();
 try { const v = localStorage.getItem(NS + 'xr-view'); const h = (location.hash||'').replace('#',''); const want = document.getElementById('v-' + h) ? h : v; if (want && document.getElementById('v-' + want)) go(want); } catch(e) {}
 
